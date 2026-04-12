@@ -194,7 +194,7 @@ export default function OnboardingPage() {
             <p className="text-gray-400 text-sm mb-8">
               {form.country === 'PT'
                 ? 'Affects how your quotes show totals.'
-                : 'We'll add a tax field to your quotes if needed.'}
+                : "We'll add a tax field to your quotes if needed."}
             </p>
             <div className="space-y-3">
               <button onClick={() => set('vat_registered', false)}
