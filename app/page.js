@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/useAuth'
+import { useBusinesses } from '@/lib/useBusinesses'
 import { formatCurrency } from '@/lib/trades'
 
 function timeAgo(d) {
@@ -24,28 +25,29 @@ const STATUS = {
 
 export default function Dashboard() {
   const { user, loading } = useAuth()
+  const { businesses, activeBusiness, switchBusiness, loading: bizLoading } = useBusinesses(user)
   const [leads, setLeads] = useState([])
-  const [business, setBusiness] = useState(null)
   const [tab, setTab] = useState('new')
   const [addOpen, setAddOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [copied, setCopied] = useState(false)
+  const [switcherOpen, setSwitcherOpen] = useState(false)
   const [dataLoading, setDataLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
 
-  useEffect(() => { if (user) fetchData() }, [user])
+  // Reload leads when active business changes
+  useEffect(() => {
+    if (activeBusiness) fetchLeads(activeBusiness.id)
+  }, [activeBusiness])
 
-  async function fetchData() {
-    const { data: biz } = await supabase
-      .from('businesses').select('*').eq('owner_id', user.id).single()
-    if (!biz) { router.replace('/onboarding'); return }
-    setBusiness(biz)
+  async function fetchLeads(bizId) {
+    setDataLoading(true)
     const { data } = await supabase
       .from('leads')
       .select('*, quotes(id,total,status)')
-      .eq('business_id', biz.id)
+      .eq('business_id', bizId)
       .order('created_at', { ascending: false })
     setLeads(data || [])
     setDataLoading(false)
@@ -53,10 +55,10 @@ export default function Dashboard() {
 
   async function createLead(e) {
     e.preventDefault()
-    if (!newName) return
+    if (!newName || !activeBusiness) return
     const { data } = await supabase
       .from('leads')
-      .insert({ name: newName, phone: newPhone, business_id: business.id, status: 'new', source: 'manual' })
+      .insert({ name: newName, phone: newPhone, business_id: activeBusiness.id, status: 'new', source: 'manual' })
       .select().single()
     if (data) { setAddOpen(false); setNewName(''); setNewPhone(''); router.push(`/lead/${data.id}`) }
   }
@@ -66,12 +68,13 @@ export default function Dashboard() {
     window.location.href = '/login'
   }
 
-  if (loading || dataLoading) return (
+  if (loading || bizLoading || dataLoading) return (
     <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
+  const business = activeBusiness
   const fmt = (n) => formatCurrency(n, business?.currency)
   const tabs = [
     { k:'new',    label:'New',    n: leads.filter(l=>l.status==='new').length },
@@ -122,8 +125,19 @@ export default function Dashboard() {
         })()}
 
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-xl font-bold font-heading text-gray-900">{business?.name}</h1>
+          <div className="flex-1 min-w-0">
+            {/* Business switcher */}
+            {businesses.length > 1 ? (
+              <button onClick={() => setSwitcherOpen(true)}
+                className="flex items-center gap-2 group">
+                <h1 className="text-xl font-bold font-heading text-gray-900 truncate">{business?.name}</h1>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                  Switch ▾
+                </span>
+              </button>
+            ) : (
+              <h1 className="text-xl font-bold font-heading text-gray-900">{business?.name}</h1>
+            )}
             <p className="text-xs text-gray-600 mt-0.5">Leads & Quotes</p>
           </div>
           <div className="flex items-center gap-2">
@@ -266,6 +280,45 @@ export default function Dashboard() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Business switcher modal */}
+      {switcherOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => setSwitcherOpen(false)}>
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
+            <h3 className="text-lg font-bold font-heading text-gray-900 mb-4">Your businesses</h3>
+            <div className="space-y-2 mb-4">
+              {businesses.map(biz => (
+                <button key={biz.id}
+                  onClick={() => { switchBusiness(biz); setSwitcherOpen(false) }}
+                  className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all ${
+                    biz.id === business?.id
+                      ? 'border-brand bg-brand-light'
+                      : 'border-gray-200'
+                  }`}>
+                  <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold font-heading">{biz.name[0]}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-semibold font-heading ${biz.id === business?.id ? 'text-brand' : 'text-gray-900'}`}>
+                      {biz.name}
+                    </p>
+                    <p className="text-xs text-gray-600">{biz.industry} · {biz.currency}</p>
+                  </div>
+                  {biz.id === business?.id && (
+                    <span className="text-brand text-sm font-bold">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => { setSwitcherOpen(false); router.push('/onboarding') }}
+              className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-3.5 text-sm font-semibold text-gray-600 hover:border-brand hover:text-brand transition-colors">
+              + Add another business
+            </button>
+          </div>
         </div>
       )}
     </div>

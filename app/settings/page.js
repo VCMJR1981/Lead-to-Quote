@@ -247,9 +247,13 @@ export default function SettingsPage() {
               <p className="text-sm font-medium text-gray-900">{user?.email}</p>
             </div>
             <div className="flex gap-2 pt-2 border-t border-gray-50">
+              <button onClick={() => router.push('/onboarding')}
+                className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl">
+                + Add business
+              </button>
               <button onClick={() => router.push('/billing')}
                 className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl">
-                💳 Manage subscription
+                💳 Subscription
               </button>
               <button onClick={signOut} disabled={signingOut}
                 className="flex-1 border border-red-100 text-red-500 text-sm font-semibold py-2.5 rounded-xl">

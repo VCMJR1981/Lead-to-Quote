@@ -65,16 +65,48 @@ export default function LeadPage({ params }) {
 
   function loadSavedRates() {
     if (!business) return
-    const stored = localStorage.getItem(`rates_${business.id}`)
-    if (!stored) { alert('No saved rates yet. Go to ⚙ Rates to set them up.'); return }
-    const rates = JSON.parse(stored)
-    setSections(prev => prev.map((sec, i) => {
-      if (i !== 0) return sec
-      const newItems = rates
-        .filter(r => r.name && !sec.items.find(it => it.name === r.name))
-        .map(r => ({ id: genId(), name: r.name, qty: 1, unit_price: r.unit_price, total: r.unit_price }))
-      return { ...sec, items: [...sec.items, ...newItems] }
-    }))
+    // Try new v2 format first (per trade sections)
+    const storedV2 = localStorage.getItem(`rates_v2_${business.id}`)
+    // Fall back to old flat format
+    const storedV1 = localStorage.getItem(`rates_${business.id}`)
+
+    if (!storedV2 && !storedV1) {
+      alert('No saved rates yet. Go to ⚡ Rates to set them up.')
+      return
+    }
+
+    if (storedV2) {
+      // New format: array of sections, each with rates array
+      const savedSections = JSON.parse(storedV2)
+      setSections(prev => {
+        const updated = [...prev]
+        savedSections.forEach(savedSec => {
+          const existing = updated.find(s => s.tradeKey === savedSec.tradeKey)
+          const newItems = savedSec.rates
+            .filter(r => r.name)
+            .map(r => ({ id: genId(), name: r.name, qty: 1, unit_price: r.unit_price, total: r.unit_price }))
+          if (existing) {
+            // Merge into existing section
+            const fresh = newItems.filter(ni => !existing.items.find(i => i.name === ni.name))
+            existing.items = [...existing.items, ...fresh]
+          } else {
+            // Add new section
+            updated.push({ id: genId(), tradeKey: savedSec.tradeKey, tradeName: savedSec.tradeName, items: newItems })
+          }
+        })
+        return updated
+      })
+    } else {
+      // Old flat format
+      const rates = JSON.parse(storedV1)
+      setSections(prev => prev.map((sec, i) => {
+        if (i !== 0) return sec
+        const newItems = rates
+          .filter(r => r.name && !sec.items.find(it => it.name === r.name))
+          .map(r => ({ id: genId(), name: r.name, qty: 1, unit_price: r.unit_price, total: r.unit_price }))
+        return { ...sec, items: [...sec.items, ...newItems] }
+      }))
+    }
     setRatesLoaded(true)
     setSaved(false)
   }
