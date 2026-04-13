@@ -253,8 +253,8 @@ export default function Dashboard() {
 
       {/* Bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 pb-8 z-10">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 bg-gray-50 rounded-xl px-3 py-2">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <div className="flex-1 min-w-[140px] bg-gray-50 rounded-xl px-3 py-2">
             <p className="text-xs text-gray-600">Share to get new leads</p>
             <p className="text-xs font-medium text-gray-600 truncate">
               {typeof window !== 'undefined' ? window.location.origin : ''}/form/{business?.slug}
@@ -262,27 +262,19 @@ export default function Dashboard() {
           </div>
           <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/form/${business?.slug}`); setCopied(true); setTimeout(()=>setCopied(false),2000) }}
             className={`text-white text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0 transition-colors ${copied ? 'bg-green-500' : 'brand-gradient'}`}>
-            {copied ? '✓ Copied!' : 'Copy link'}
+            {copied ? '✓' : 'Copy'}
           </button>
-          <Link href="/revenue"
-            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            📊 Revenue
+          <Link href="/revenue" className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
+            📊
           </Link>
-          <Link href="/clients"
-            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            👥 Clients
+          <Link href="/clients" className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
+            👥
           </Link>
-          <Link href="/revenue"
-            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            📊 Revenue
+          <Link href="/rates" className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
+            ⚡
           </Link>
-          <Link href="/rates"
-            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            ⚡ Rates
-          </Link>
-          <Link href="/settings"
-            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            👤 Profile
+          <Link href="/settings" className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
+            👤
           </Link>
         </div>
       </div>
