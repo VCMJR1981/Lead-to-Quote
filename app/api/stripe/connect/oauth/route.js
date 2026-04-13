@@ -32,3 +32,5 @@ export async function GET() {
   const url = `https://connect.stripe.com/oauth/authorize?${params.toString()}`
   return NextResponse.redirect(url)
 }
+-e 
+export const dynamic = 'force-dynamic'

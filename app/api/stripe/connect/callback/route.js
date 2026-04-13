@@ -45,3 +45,5 @@ export async function GET(request) {
     return NextResponse.redirect(`${appUrl}/billing?connect_error=1`)
   }
 }
+-e 
+export const dynamic = 'force-dynamic'

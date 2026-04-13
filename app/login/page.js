@@ -105,3 +105,5 @@ export default function LoginPage() {
     </div>
   )
 }
+-e 
+export const dynamic = 'force-dynamic'

@@ -294,3 +294,5 @@ export default function OnboardingPage() {
     </div>
   )
 }
+-e 
+export const dynamic = 'force-dynamic'

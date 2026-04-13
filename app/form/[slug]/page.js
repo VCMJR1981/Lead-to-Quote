@@ -209,3 +209,5 @@ export default function IntakeFormPage({ params }) {
     </div>
   )
 }
+-e 
+export const dynamic = 'force-dynamic'

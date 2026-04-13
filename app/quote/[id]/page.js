@@ -228,3 +228,5 @@ export default function QuotePage({ params }) {
     </div>
   )
 }
+-e 
+export const dynamic = 'force-dynamic'
