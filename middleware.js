@@ -1,5 +1,5 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request) {
   let supabaseResponse = NextResponse.next({ request })
@@ -25,20 +25,16 @@ export async function middleware(request) {
     }
   )
 
-  // IMPORTANT: Do not add logic between createServerClient and getUser
   const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
 
-  // Public routes — no auth needed
+  // Public — no auth needed
   const isPublic =
     pathname.startsWith('/form') ||
     pathname.startsWith('/quote') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||
-    pathname.startsWith('/api/stripe/webhook') ||
-    pathname.startsWith('/api/stripe/connect/webhook') ||
-    pathname.startsWith('/api/stripe/connect/callback')
+    pathname.startsWith('/api/')
 
   if (isPublic) return supabaseResponse
 
@@ -47,39 +43,6 @@ export async function middleware(request) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
-  }
-
-  // Billing/onboarding always accessible when logged in
-  const isBillingOk =
-    pathname.startsWith('/billing') ||
-    pathname.startsWith('/onboarding') ||
-    pathname.startsWith('/api/stripe')
-
-  if (isBillingOk) return supabaseResponse
-
-  // Subscription gate
-  const { data: business } = await supabase
-    .from('businesses')
-    .select('subscription_status, trial_ends_at')
-    .eq('owner_id', user.id)
-    .maybeSingle()
-
-  if (business) {
-    const trialExpired =
-      business.subscription_status === 'trialing' &&
-      business.trial_ends_at &&
-      new Date(business.trial_ends_at) < new Date()
-
-    const blocked =
-      business.subscription_status === 'canceled' ||
-      business.subscription_status === 'past_due' ||
-      trialExpired
-
-    if (blocked) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/billing'
-      return NextResponse.redirect(url)
-    }
   }
 
   return supabaseResponse
