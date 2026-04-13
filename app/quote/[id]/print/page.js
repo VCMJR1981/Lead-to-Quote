@@ -61,7 +61,8 @@ export default function QuotePrintPage({ params }) {
         .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #f0f0f0; }
         .logo-area { display: flex; align-items: center; gap: 16px; }
         .logo { width: 56px; height: 56px; border-radius: 12px; background: ${accent}; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 700; overflow: hidden; }
-        .logo img { width: 100%; height: 100%; object-fit: cover; }
+        .logo.has-image { background: white; border: 1px solid #e8e8e8; }
+        .logo img { width: 100%; height: 100%; object-fit: contain; }
         .biz-name { font-size: 18px; font-weight: 700; color: #111; }
         .biz-detail { font-size: 12px; color: #666; margin-top: 2px; }
         .quote-meta { text-align: right; }
@@ -128,7 +129,7 @@ export default function QuotePrintPage({ params }) {
         {/* Header */}
         <div className="header">
           <div className="logo-area">
-            <div className="logo">
+            <div className={`logo${business?.logo_url ? ' has-image' : ''}`}>
               {business?.logo_url
                 ? <img src={business.logo_url} alt={business.name} />
                 : (business?.name?.[0]?.toUpperCase() || '?')

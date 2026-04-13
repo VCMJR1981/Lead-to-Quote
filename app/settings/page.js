@@ -48,10 +48,13 @@ export default function SettingsPage() {
       const { error: uploadError } = await supabase.storage
         .from('business-assets')
         .upload(path, logoFile, { upsert: true })
-      if (!uploadError) {
-        const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
-        logo_url = data.publicUrl
+      if (uploadError) {
+        setError(`Logo upload failed: ${uploadError.message}`)
+        setSaving(false)
+        return
       }
+      const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+      logo_url = data.publicUrl
     }
 
     const { error } = await supabase.from('businesses').update({
@@ -70,7 +73,7 @@ export default function SettingsPage() {
       vat_rate: business.vat_registered ? (COUNTRY_CONFIG[business.country]?.taxRate || 0) : 0,
     }).eq('id', business.id)
 
-    if (error) { setError(error.message); setSaving(false); return }
+    if (error) { setError(`Save failed: ${error.message}`); setSaving(false); return }
     setSaving(false)
     setSaved(true)
   }
@@ -119,9 +122,9 @@ export default function SettingsPage() {
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-2">Business logo</label>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
+                <div className="w-16 h-16 rounded-2xl border-2 border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-white">
                   {(logoPreview || business.logo_url) ? (
-                    <img src={logoPreview || business.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                    <img src={logoPreview || business.logo_url} alt="Logo" className="w-full h-full object-contain" />
                   ) : (
                     <span className="text-2xl">🏢</span>
                   )}

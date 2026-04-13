@@ -90,7 +90,8 @@ export default function QuotePage({ params }) {
       <div className="bg-white border-b border-gray-100 px-4 py-5">
         <div className="max-w-xl mx-auto flex items-center gap-4">
           {business?.logo_url ? (
-            <img src={business.logo_url} alt={business.name} className="w-14 h-14 rounded-2xl object-cover flex-shrink-0" />
+            <img src={business.logo_url} alt={business.name}
+              className="w-14 h-14 rounded-2xl object-contain flex-shrink-0 bg-white border border-gray-100" />
           ) : (
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 font-bold font-heading text-white text-xl"
               style={{ backgroundColor: accent }}>
