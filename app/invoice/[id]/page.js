@@ -53,7 +53,7 @@ export default function InvoicePage({ params }) {
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Invoice</p>
+              <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Invoice</p>
               <h2 className="text-2xl font-bold font-heading text-brand">
                 {quote?.quote_number?.replace('Q-', 'INV-') || 'INV-0001'}
               </h2>
@@ -62,7 +62,7 @@ export default function InvoicePage({ params }) {
               </span>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-400 mb-1">Invoiced to</p>
+              <p className="text-xs text-gray-600 mb-1">Invoiced to</p>
               <p className="font-semibold font-heading text-gray-900">{lead?.name}</p>
               <p className="text-xs text-red-500 font-medium mt-1">
                 Due: {new Date(Date.now() + 30*86400000).toLocaleDateString()}
@@ -80,7 +80,7 @@ export default function InvoicePage({ params }) {
               <div key={item.id} className="px-4 py-3 flex justify-between border-b border-gray-50 last:border-0">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                  {item.qty !== 1 && <p className="text-xs text-gray-400">{item.qty} × {fmt(item.unit_price)}</p>}
+                  {item.qty !== 1 && <p className="text-xs text-gray-600">{item.qty} × {fmt(item.unit_price)}</p>}
                 </div>
                 <p className="font-semibold text-gray-900">{fmt(item.total || 0)}</p>
               </div>
@@ -103,7 +103,7 @@ export default function InvoicePage({ params }) {
           <p className="text-sm text-blue-700 font-medium">💳 Please arrange payment with {business?.name} directly.</p>
         </div>
 
-        <p className="text-center text-xs text-gray-300 pb-8">Powered by Lead-to-Quote</p>
+        <p className="text-center text-xs text-gray-500 pb-8">Powered by Lead-to-Quote</p>
       </div>
     </div>
   )

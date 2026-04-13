@@ -30,7 +30,9 @@ export default function OnboardingPage() {
   const supabase = createClient()
 
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', address: '', tagline: '',
+    name: '', phone: '', email: '',
+    address_street: '', address_city: '', address_state: '', address_zip: '',
+    tagline: '',
     country: null,
     industry: '',
     deposit_pct: 30,
@@ -55,13 +57,15 @@ export default function OnboardingPage() {
     setSaving(true)
     setError('')
     const slug = slugify(form.name) + '-' + Math.random().toString(36).slice(2, 6)
+    const addressParts = [form.address_street, form.address_city, form.address_state, form.address_zip].filter(Boolean)
+    const address = addressParts.join(', ') || null
     const { error } = await supabase.from('businesses').insert({
       owner_id: user.id,
       name: form.name,
       slug,
       phone: form.phone || null,
       email: form.email || null,
-      address: form.address || null,
+      address,
       tagline: form.tagline || null,
       country: form.country,
       language: cfg?.language || 'en',
@@ -99,7 +103,7 @@ export default function OnboardingPage() {
                 <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? 'bg-brand' : 'bg-gray-200'}`} />
               ))}
             </div>
-            <p className="text-xs text-gray-400">Step {step + 1} of {STEPS.length} — {STEPS[step]}</p>
+            <p className="text-xs text-gray-600">Step {step + 1} of {STEPS.length} — {STEPS[step]}</p>
           </div>
         </div>
       </div>
@@ -111,7 +115,7 @@ export default function OnboardingPage() {
         {step === 0 && (
           <div>
             <h2 className="text-2xl font-bold font-heading text-gray-900 mb-2">Welcome!</h2>
-            <p className="text-gray-400 text-sm mb-8">
+            <p className="text-gray-600 text-sm mb-8">
               You're signed in as <strong>{user?.email}</strong>. Let's set up your business in a few steps.
             </p>
             <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
@@ -134,7 +138,7 @@ export default function OnboardingPage() {
         {step === 1 && (
           <div>
             <h2 className="text-2xl font-bold font-heading text-gray-900 mb-2">Where do you work?</h2>
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-gray-600 text-sm mb-6">
               Sets your currency, tax rules, bank format, and Stripe card fees automatically.
             </p>
             <div className="space-y-3">
@@ -173,7 +177,7 @@ export default function OnboardingPage() {
         {step === 2 && (
           <div>
             <h2 className="text-2xl font-bold font-heading text-gray-900 mb-2">What type of work do you do?</h2>
-            <p className="text-gray-400 text-sm mb-6">Loads the right quote templates for you.</p>
+            <p className="text-gray-600 text-sm mb-6">Loads the right quote templates for you.</p>
             <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto pr-1">
               {TRADE_LIST.map(t => (
                 <button key={t.key} onClick={() => set('industry', t.key)}
@@ -196,21 +200,21 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div>
             <h2 className="text-2xl font-bold font-heading text-gray-900 mb-2">Payment policy</h2>
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-gray-600 text-sm mb-6">
               These defaults apply to every quote. You can override them per quote anytime.
             </p>
 
             {/* Deposit % */}
             <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
               <p className="text-sm font-semibold font-heading text-gray-700 mb-1">Default deposit upfront</p>
-              <p className="text-xs text-gray-400 mb-3">How much do you typically ask upfront before starting?</p>
+              <p className="text-xs text-gray-600 mb-3">How much do you typically ask upfront before starting?</p>
               <div className="grid grid-cols-4 gap-2">
                 {[0, 25, 30, 50].map(pct => (
                   <button key={pct} onClick={() => set('deposit_pct', pct)}
                     className={`py-3 rounded-xl text-sm font-bold border-2 transition-all ${
                       form.deposit_pct === pct
                         ? 'border-brand bg-brand-light text-brand'
-                        : 'border-gray-200 text-gray-400'
+                        : 'border-gray-200 text-gray-600'
                     }`}>
                     {pct === 0 ? 'None' : `${pct}%`}
                   </button>
@@ -248,7 +252,7 @@ export default function OnboardingPage() {
                       <p className={`text-sm font-semibold ${form.payment_methods.includes(m.key) ? 'text-brand' : 'text-gray-700'}`}>
                         {m.label}
                       </p>
-                      {m.sub && <p className="text-xs text-gray-400">{m.sub}</p>}
+                      {m.sub && <p className="text-xs text-gray-600">{m.sub}</p>}
                     </div>
                     <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${
                       form.payment_methods.includes(m.key) ? 'bg-brand border-brand' : 'border-gray-300'
@@ -266,7 +270,7 @@ export default function OnboardingPage() {
                 <p className="text-sm font-semibold font-heading text-gray-700 mb-1">
                   {form.country === 'PT' ? 'Your IBAN' : form.country === 'UK' ? 'Sort code & account number' : 'Routing & account number'}
                 </p>
-                <p className="text-xs text-gray-400 mb-3">Shown on quotes so clients can transfer directly.</p>
+                <p className="text-xs text-gray-600 mb-3">Shown on quotes so clients can transfer directly.</p>
                 <input
                   type="text"
                   value={form.bank_detail}
@@ -287,23 +291,47 @@ export default function OnboardingPage() {
         {step === 4 && (
           <div>
             <h2 className="text-2xl font-bold font-heading text-gray-900 mb-2">Your business details</h2>
-            <p className="text-gray-400 text-sm mb-6">Shown on every quote. Only name is required.</p>
+            <p className="text-gray-600 text-sm mb-6">Shown on every quote. Only name is required.</p>
             <div className="space-y-4">
               {[
-                { field: 'name',    label: 'Business name *',   placeholder: "Mike's Plumbing",    type: 'text' },
-                { field: 'phone',   label: 'Phone number',      placeholder: cfg?.phone || '+1 555 000 0000', type: 'tel' },
-                { field: 'email',   label: 'Business email',    placeholder: 'you@example.com',    type: 'email' },
-                { field: 'address', label: 'Business address',  placeholder: 'Street, City',       type: 'text' },
-                { field: 'tagline', label: 'Tagline (optional)', placeholder: 'Available 24/7',    type: 'text' },
+                { field: 'name',    label: 'Business name *',    placeholder: "Mike's Plumbing",              type: 'text' },
+                { field: 'phone',   label: 'Phone number',       placeholder: cfg?.phone || '+1 555 000 0000', type: 'tel' },
+                { field: 'email',   label: 'Business email',     placeholder: 'you@example.com',              type: 'email' },
+                { field: 'tagline', label: 'Tagline (optional)', placeholder: 'Available 24/7',               type: 'text' },
               ].map(({ field, label, placeholder, type }) => (
                 <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
                   <input type={type} value={form[field]} onChange={e => set(field, e.target.value)}
                     placeholder={placeholder}
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
               ))}
+
+              {/* Structured address */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Business address</label>
+                <div className="space-y-2">
+                  <input type="text" value={form.address_street || ''} onChange={e => set('address_street', e.target.value)}
+                    placeholder="Street address"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" value={form.address_city || ''} onChange={e => set('address_city', e.target.value)}
+                      placeholder="City"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
+                    />
+                    <input type="text" value={form.address_state || ''} onChange={e => set('address_state', e.target.value)}
+                      placeholder={form.country === 'US' ? 'State' : form.country === 'UK' ? 'County' : 'District'}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
+                    />
+                  </div>
+                  <input type="text" value={form.address_zip || ''} onChange={e => set('address_zip', e.target.value)}
+                    placeholder={form.country === 'US' ? 'ZIP code' : form.country === 'UK' ? 'Postcode' : 'Postal code'}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
+                  />
+                </div>
+              </div>
 
               {/* Tax */}
               {cfg?.tax && (
@@ -314,13 +342,13 @@ export default function OnboardingPage() {
                   <div className="flex gap-2">
                     <button onClick={() => set('vat_registered', false)}
                       className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
-                        !form.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-400'
+                        !form.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-600'
                       }`}>
                       No
                     </button>
                     <button onClick={() => set('vat_registered', true)}
                       className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
-                        form.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-400'
+                        form.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-600'
                       }`}>
                       Yes ({cfg.taxRate}%)
                     </button>

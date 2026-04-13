@@ -124,7 +124,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold font-heading text-gray-900">{business?.name}</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Leads & Quotes</p>
+            <p className="text-xs text-gray-600 mt-0.5">Leads & Quotes</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setAddOpen(true)}
@@ -136,7 +136,7 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="bg-[#FAFAF9] rounded-xl p-3">
-            <p className="text-xs text-gray-400 mb-0.5">Quoted (month)</p>
+            <p className="text-xs text-gray-600 mb-0.5">Quoted (month)</p>
             <p className="text-lg font-bold font-heading text-gray-900">{fmt(quotVal)}</p>
           </div>
           <div className="bg-green-50 rounded-xl p-3">
@@ -149,12 +149,12 @@ export default function Dashboard() {
           {tabs.map(t => (
             <button key={t.k} onClick={() => setTab(t.k)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                tab===t.k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
+                tab===t.k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
               }`}>
               {t.label}
               {t.n > 0 && (
                 <span className={`text-xs rounded-full px-1.5 py-0.5 leading-none ${
-                  tab===t.k ? 'bg-brand text-white' : 'bg-gray-200 text-gray-400'
+                  tab===t.k ? 'bg-brand text-white' : 'bg-gray-200 text-gray-600'
                 }`}>{t.n}</span>
               )}
             </button>
@@ -167,7 +167,7 @@ export default function Dashboard() {
         {filtered.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-5xl mb-3">{tab==='new'?'📋':tab==='quoted'?'📨':'🏆'}</div>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-600 text-sm">
               {tab==='new'?'No new leads':tab==='quoted'?'No quotes sent yet':'No closed deals'}
             </p>
             {tab==='new' && (
@@ -176,15 +176,20 @@ export default function Dashboard() {
               </button>
             )}
           </div>
-        ) : filtered.map(lead => {
+        ) : filtered.map((lead, idx) => {
           const quote = lead.quotes?.[0]
           const st = STATUS[lead.status] || STATUS.new
+          // Client number based on position in full leads array
+          const clientNum = String(leads.length - leads.findIndex(l => l.id === lead.id)).padStart(3, '0')
           return (
             <Link key={lead.id} href={`/lead/${lead.id}`}>
               <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm active:scale-[0.98] transition-transform">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                        #{clientNum}
+                      </span>
                       <h3 className="font-semibold text-gray-900 font-heading">{lead.name}</h3>
                       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
                         style={{ background: st.bg, color: st.c }}>
@@ -195,8 +200,8 @@ export default function Dashboard() {
                         <span className="text-xs text-blue-500 font-medium">👁 Seen</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-400 truncate">{lead.job_type || 'No job type'}</p>
-                    {lead.phone && <p className="text-xs text-gray-300 mt-0.5">{lead.phone}</p>}
+                    {lead.job_type && <p className="text-sm text-gray-700 truncate">{lead.job_type}</p>}
+                    {lead.phone && <p className="text-xs text-gray-500 mt-0.5">{lead.phone}</p>}
                   </div>
                   <div className="text-right flex-shrink-0">
                     {quote?.total ? (
@@ -204,7 +209,7 @@ export default function Dashboard() {
                     ) : (
                       <p className="text-xs font-semibold text-brand">Quote needed</p>
                     )}
-                    <p className="text-xs text-gray-300 mt-1">{timeAgo(lead.created_at)}</p>
+                    <p className="text-xs text-gray-500 mt-1">{timeAgo(lead.created_at)}</p>
                   </div>
                 </div>
               </div>
@@ -217,7 +222,7 @@ export default function Dashboard() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 pb-8 z-10">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0 bg-gray-50 rounded-xl px-3 py-2">
-            <p className="text-xs text-gray-400">Share to get new leads</p>
+            <p className="text-xs text-gray-600">Share to get new leads</p>
             <p className="text-xs font-medium text-gray-600 truncate">
               {typeof window !== 'undefined' ? window.location.origin : ''}/form/{business?.slug}
             </p>
