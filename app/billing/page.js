@@ -75,11 +75,11 @@ function BillingContent() {
     'Unlimited quotes',
     'WhatsApp & Email send',
     'Deposit & card payments',
-    'E-signature',
     'Invoice conversion',
     'Quote opened tracking',
     'Public intake form',
     'My saved rates',
+    'Settings & profile',
   ]
 
   if (loading) return (

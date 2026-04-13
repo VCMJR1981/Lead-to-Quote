@@ -69,7 +69,14 @@ export default function QuotePage({ params }) {
   const currency = business?.currency || 'USD'
   const sym = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€'
   const fmt = n => formatCurrency(n, currency)
-  const depositAmt = (quote?.total || 0) * (quote?.deposit_pct || 0) / 100
+
+  // Use quote values, fall back to business defaults
+  const depositPct = quote?.deposit_pct ?? business?.deposit_pct ?? 30
+  const paymentMethods = (quote?.payment_methods?.length > 0
+    ? quote.payment_methods
+    : business?.payment_methods) || ['bank', 'card']
+
+  const depositAmt = (quote?.total || 0) * depositPct / 100
   const remaining = (quote?.total || 0) - depositAmt
   const stripeLabel = currency === 'USD' ? '2.9% + $0.30' : '1.5% + €0.25'
   const stripeRate = currency === 'USD' ? 0.029 : 0.015
@@ -179,36 +186,39 @@ export default function QuotePage({ params }) {
           </div>
         </div>
 
-        {/* Deposit */}
-        {quote?.deposit_pct > 0 && (
-          <div className="rounded-2xl p-4 border border-amber-200 bg-amber-50">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="font-semibold text-sm font-heading text-amber-900">
-                  Deposit to confirm job
-                </p>
-                <p className="text-xs text-amber-700 mt-0.5">
-                  {quote.deposit_pct}% upfront · Remainder due on completion
-                </p>
-              </div>
-              <p className="font-bold text-lg font-heading text-amber-900">{fmt(depositAmt)}</p>
+        {/* Deposit — always shown */}
+        <div className="rounded-2xl p-4 border border-amber-200 bg-amber-50">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <p className="font-semibold text-sm font-heading text-amber-900">
+                Deposit to confirm job
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                {depositPct > 0
+                  ? `${depositPct}% upfront · Remainder due on completion`
+                  : 'No deposit required · Full amount due on completion'}
+              </p>
             </div>
+            <p className="font-bold text-lg font-heading text-amber-900">
+              {depositPct > 0 ? fmt(depositAmt) : fmt(quote?.total || 0)}
+            </p>
+          </div>
+          {depositPct > 0 && (
             <div className="flex justify-between text-xs text-amber-600 pt-2 border-t border-amber-200">
               <span>Remaining on completion</span>
               <span>{fmt(remaining)}</span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Payment methods — shown after accept */}
-        {showPayment && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-            <p className="font-semibold font-heading text-gray-900 text-sm">
-              How would you like to pay the deposit?
-            </p>
+        {/* Payment methods — always shown */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+          <p className="font-semibold font-heading text-gray-900 text-sm">
+            {showPayment ? 'Choose how to pay the deposit' : 'How to pay'}
+          </p>
 
             {/* Bank transfer */}
-            {(quote?.payment_methods || []).includes('bank') && (
+            {paymentMethods.includes('bank') && (
               <div className="bg-gray-50 rounded-xl p-3">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-xl">🏦</span>
@@ -222,7 +232,9 @@ export default function QuotePage({ params }) {
                     <p className="text-xs text-gray-400 mb-1">Transfer details</p>
                     <p className="text-sm font-medium text-gray-900">{business.bank_detail}</p>
                     <p className="text-xs text-gray-400 mt-2">Reference: {quote?.quote_number} · {lead?.name}</p>
-                    <p className="text-sm font-bold text-gray-900 mt-1">Amount: {fmt(depositAmt)}</p>
+                    <p className="text-sm font-bold text-gray-900 mt-1">
+                      Amount: {fmt(depositPct > 0 ? depositAmt : (quote?.total || 0))}
+                    </p>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-400">Contact {business?.name} for bank details.</p>
@@ -231,7 +243,7 @@ export default function QuotePage({ params }) {
             )}
 
             {/* Card via Stripe */}
-            {(quote?.payment_methods || []).includes('card') && (
+            {paymentMethods.includes('card') && (
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-xl">💳</span>
@@ -253,21 +265,23 @@ export default function QuotePage({ params }) {
                 <div className="bg-white rounded-lg p-3 border border-blue-100">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Deposit amount</span>
-                    <span>{fmt(depositAmt)}</span>
+                    <span>{fmt(depositPct > 0 ? depositAmt : (quote?.total || 0))}</span>
                   </div>
                   <div className="flex justify-between text-xs text-blue-600 mb-2">
                     <span>Stripe fee ({stripeLabel})</span>
                     <span>+{fmt(depositAmt * stripeRate + stripeFixed)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-bold border-t border-gray-100 pt-2">
-                    <span>You pay</span>
+                    <span>You pay by card</span>
                     <span className="text-blue-700">{fmt(cardTotal)}</span>
                   </div>
                 </div>
-                <button className="w-full mt-3 py-3 rounded-xl text-white text-sm font-bold"
-                  style={{ background: '#635BFF' }}>
-                  🔒 Pay {fmt(cardTotal)} by card
-                </button>
+                {showPayment && (
+                  <button className="w-full mt-3 py-3 rounded-xl text-white text-sm font-bold"
+                    style={{ background: '#635BFF' }}>
+                    🔒 Pay {fmt(cardTotal)} by card
+                  </button>
+                )}
               </div>
             )}
 
