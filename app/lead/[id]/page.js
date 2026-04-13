@@ -28,7 +28,8 @@ export default function LeadPage({ params }) {
   const [ratesLoaded, setRatesLoaded] = useState(false)
   const [editModal, setEditModal] = useState(false)
   const [editForm, setEditForm] = useState({})
-  const router = useRouter()
+  const [smsModal, setSmsModal] = useState(false)
+  const [smsPhone, setSmsPhone] = useState('')  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => { if (user) fetchData() }, [user])
@@ -216,13 +217,28 @@ export default function LeadPage({ params }) {
   }
 
   async function sendSMS() {
+    if (!lead.phone && !smsPhone) {
+      setSmsPhone(lead.phone || '')
+      setSmsModal(true)
+      return
+    }
+    doSendSMS(lead.phone || smsPhone)
+  }
+
+  async function doSendSMS(phone) {
     const id = await saveQuote()
     await supabase.from('quotes').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', id)
+    // Save phone to lead if it was missing
+    if (!lead.phone && phone) {
+      await supabase.from('leads').update({ phone }).eq('id', lead.id)
+      setLead(prev => ({ ...prev, phone }))
+    }
     await markStatus('quoted')
     const quoteUrl = `${window.location.origin}/quote/${id}`
-    const msg = encodeURIComponent(`Hi ${lead.name}, your quote from ${business.name} is ready: ${quoteUrl}`)
-    const phone = lead.phone ? lead.phone.replace(/\D/g, '') : ''
-    window.open(`sms:${phone}?body=${msg}`, '_blank')
+    const msg = encodeURIComponent(`Hi ${lead.name}, your quote from ${business.name} is ready:\n${quoteUrl}`)
+    const cleanPhone = phone.replace(/\D/g, '')
+    window.location.href = `sms:${cleanPhone}?&body=${msg}`
+    setSmsModal(false)
   }
 
   async function sendEmail() {
@@ -567,6 +583,43 @@ export default function LeadPage({ params }) {
                 disabled={!emailInput || emailSending}
                 className="flex-2 flex-grow bg-blue-600 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50">
                 {emailSending ? 'Sending...' : 'Save & send ✉️'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* SMS modal — shown when no phone on file */}
+      {smsModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => setSmsModal(false)}>
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-lg">💬</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold font-heading text-gray-900">No phone number on file</h3>
+                <p className="text-sm text-gray-600">Add {lead?.name?.split(' ')[0]}{"'s"} number to send by SMS.</p>
+              </div>
+            </div>
+            <input
+              type="tel"
+              value={smsPhone}
+              onChange={e => setSmsPhone(e.target.value)}
+              placeholder="+1 555 000 0000"
+              autoFocus
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand mb-3"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setSmsModal(false)}
+                className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-3 rounded-xl">
+                Cancel
+              </button>
+              <button
+                onClick={() => { if (smsPhone) doSendSMS(smsPhone) }}
+                disabled={!smsPhone}
+                className="flex-grow bg-purple-600 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50">
+                Save & open SMS 💬
               </button>
             </div>
           </div>
