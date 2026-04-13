@@ -77,14 +77,14 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-14 pb-4 sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/')} className="text-gray-600 p-1 -ml-1">
+          <button onClick={() => router.push('/')} className="text-gray-400 p-1 -ml-1">
             <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
               <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <div>
             <h1 className="text-lg font-bold font-heading text-gray-900">Settings</h1>
-            <p className="text-xs text-gray-600">Business profile & preferences</p>
+            <p className="text-xs text-gray-400">Business profile & preferences</p>
           </div>
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function SettingsPage() {
 
         {/* Business details */}
         <div>
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Business Details</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Business Details</p>
           <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
             {[
               { field: 'name',    label: 'Business name',  placeholder: "Mike's Plumbing",  type: 'text' },
@@ -127,7 +127,7 @@ export default function SettingsPage() {
 
         {/* Payment policy */}
         <div>
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Payment Policy</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Payment Policy</p>
           <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
 
             {/* Deposit % */}
@@ -139,7 +139,7 @@ export default function SettingsPage() {
                     className={`py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                       business.deposit_pct === pct
                         ? 'border-brand bg-brand-light text-brand'
-                        : 'border-gray-200 text-gray-600'
+                        : 'border-gray-200 text-gray-400'
                     }`}>
                     {pct === 0 ? 'None' : `${pct}%`}
                   </button>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
                 />
-                <p className="text-xs text-gray-600 mt-1">Shown on quotes so clients can transfer directly.</p>
+                <p className="text-xs text-gray-400 mt-1">Shown on quotes so clients can transfer directly.</p>
               </div>
             )}
           </div>
@@ -205,7 +205,7 @@ export default function SettingsPage() {
         {/* Tax */}
         {cfg?.taxRate && (
           <div>
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Tax</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Tax</p>
             <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-2">
@@ -214,11 +214,11 @@ export default function SettingsPage() {
                 <div className="flex gap-2">
                   <button onClick={() => set('vat_registered', false)}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
-                      !business.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-600'
+                      !business.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-400'
                     }`}>No</button>
                   <button onClick={() => set('vat_registered', true)}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
-                      business.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-600'
+                      business.vat_registered ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-400'
                     }`}>Yes ({cfg.taxRate}%)</button>
                 </div>
               </div>
@@ -240,10 +240,10 @@ export default function SettingsPage() {
 
         {/* Account */}
         <div>
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Account</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Account</p>
           <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
             <div>
-              <p className="text-xs text-gray-600 mb-1">Signed in as</p>
+              <p className="text-xs text-gray-400 mb-1">Signed in as</p>
               <p className="text-sm font-medium text-gray-900">{user?.email}</p>
             </div>
             <div className="flex gap-2 pt-2 border-t border-gray-50">

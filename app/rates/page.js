@@ -32,7 +32,7 @@ export default function RatesPage() {
     } else {
       // Default rates based on industry
       setRates([
-        { id: '1', name: 'Labor (hourly)', unit_price: biz.currency === 'USD' ? 95 : 70 },
+        { id: '1', name: 'Labour (hourly)', unit_price: biz.currency === 'USD' ? 95 : 70 },
         { id: '2', name: 'Call-out fee', unit_price: biz.currency === 'USD' ? 75 : 50 },
         { id: '3', name: 'Parts & materials', unit_price: 0 },
       ])
@@ -80,14 +80,14 @@ export default function RatesPage() {
       <div className="bg-white border-b border-gray-100 px-4 pt-14 pb-4 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/')}
-            className="text-gray-600 p-1 -ml-1">
+            className="text-gray-400 p-1 -ml-1">
             <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
               <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <div>
             <h1 className="text-lg font-bold font-heading text-gray-900">My Saved Rates</h1>
-            <p className="text-xs text-gray-600">Load into any quote with one tap</p>
+            <p className="text-xs text-gray-400">Load into any quote with one tap</p>
           </div>
         </div>
       </div>
@@ -106,8 +106,8 @@ export default function RatesPage() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Header */}
           <div className="grid grid-cols-[1fr_100px_36px] gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Item</span>
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Default {sym}</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Item</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Default {sym}</span>
             <span />
           </div>
 
@@ -124,7 +124,7 @@ export default function RatesPage() {
                 className="text-sm text-gray-900 bg-transparent focus:outline-none w-full"
               />
               <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-1.5">
-                <span className="text-xs text-gray-600">{sym}</span>
+                <span className="text-xs text-gray-400">{sym}</span>
                 <input
                   type="number" value={rate.unit_price}
                   onChange={e => updateRate(rate.id, 'unit_price', e.target.value)}
@@ -133,7 +133,7 @@ export default function RatesPage() {
                 />
               </div>
               <button onClick={() => removeRate(rate.id)}
-                className="text-gray-500 hover:text-red-400 transition-colors flex items-center justify-center">
+                className="text-gray-300 hover:text-red-400 transition-colors flex items-center justify-center">
                 <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
                   <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
@@ -147,7 +147,7 @@ export default function RatesPage() {
           </button>
         </div>
 
-        <p className="text-xs text-gray-600 text-center">
+        <p className="text-xs text-gray-400 text-center">
           Set price to 0 for items you always adjust per job
         </p>
       </div>
