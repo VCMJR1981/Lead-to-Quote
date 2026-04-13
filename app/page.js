@@ -90,6 +90,37 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#FAFAF9]">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-14 pb-4 sticky top-0 z-10">
+
+        {/* Trial countdown */}
+        {business?.subscription_status === 'trialing' && business?.trial_ends_at && (() => {
+          const daysLeft = Math.max(0, Math.ceil((new Date(business.trial_ends_at) - new Date()) / 86400000))
+          const pct = Math.round((daysLeft / 14) * 100)
+          return (
+            <Link href="/billing" className="block mb-3">
+              <div className={`rounded-xl px-3 py-2.5 flex items-center justify-between ${
+                daysLeft <= 3 ? 'bg-red-50 border border-red-100' : 'bg-blue-50 border border-blue-100'
+              }`}>
+                <div>
+                  <p className={`text-xs font-semibold ${daysLeft <= 3 ? 'text-red-700' : 'text-blue-700'}`}>
+                    {daysLeft === 0 ? '⚠️ Trial expires today' :
+                     daysLeft === 1 ? '⚠️ 1 day left in trial' :
+                     `⏱ ${daysLeft} days left in free trial`}
+                  </p>
+                  <div className="mt-1 h-1 rounded-full bg-gray-200 w-32">
+                    <div className={`h-1 rounded-full transition-all ${daysLeft <= 3 ? 'bg-red-500' : 'bg-blue-500'}`}
+                      style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${
+                  daysLeft <= 3 ? 'bg-red-500 text-white' : 'bg-blue-600 text-white'
+                }`}>
+                  Upgrade →
+                </span>
+              </div>
+            </Link>
+          )
+        })()}
+
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold font-heading text-gray-900">{business?.name}</h1>
@@ -186,7 +217,7 @@ export default function Dashboard() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 pb-8 z-10">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0 bg-gray-50 rounded-xl px-3 py-2">
-            <p className="text-xs text-gray-400">Your intake form</p>
+            <p className="text-xs text-gray-400">Share to get new leads</p>
             <p className="text-xs font-medium text-gray-600 truncate">
               {typeof window !== 'undefined' ? window.location.origin : ''}/form/{business?.slug}
             </p>
@@ -199,9 +230,9 @@ export default function Dashboard() {
             className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
             ⚙ Rates
           </Link>
-          <Link href="/billing"
+          <Link href="/settings"
             className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            💳 Plan
+            👤 Profile
           </Link>
         </div>
       </div>

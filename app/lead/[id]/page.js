@@ -35,6 +35,9 @@ export default function LeadPage({ params }) {
     const { data: biz } = await supabase.from('businesses').select('*').eq('owner_id', user.id).single()
     if (!biz) { router.replace('/onboarding'); return }
     setBusiness(biz)
+    // Default deposit from business settings
+    setDepositPct(biz.deposit_pct ?? 30)
+    setPayMethods(biz.payment_methods || ['bank', 'card'])
 
     const { data: ld } = await supabase.from('leads').select('*').eq('id', params.id).single()
     if (!ld) { router.replace('/'); return }
@@ -47,7 +50,8 @@ export default function LeadPage({ params }) {
       setQuoteId(qt.id)
       setSections(qt.sections || [])
       setNotes(qt.notes || '')
-      setDepositPct(qt.deposit_pct || 30)
+      setDepositPct(qt.deposit_pct ?? biz.deposit_pct ?? 30)
+      setPayMethods(qt.payment_methods || biz.payment_methods || ['bank', 'card'])
     } else {
       const tradeKey = biz.industry || 'handyman'
       const trade = getTrade(tradeKey)
@@ -313,11 +317,21 @@ export default function LeadPage({ params }) {
           />
         </div>
 
-        {/* Payment settings */}
+        {/* Payment settings — from profile, overridable per quote */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs font-semibold font-heading text-gray-500 uppercase tracking-wide mb-3">Payment Settings</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold font-heading text-gray-500 uppercase tracking-wide">Payment Settings</p>
+            <span className="text-xs text-gray-400">From your profile · override below</span>
+          </div>
+
+          {/* Deposit override */}
           <div className="mb-4">
-            <p className="text-xs font-medium text-gray-600 mb-2">Deposit required upfront</p>
+            <p className="text-xs font-medium text-gray-600 mb-2">
+              Deposit for this quote
+              {business?.deposit_pct > 0 && (
+                <span className="text-gray-400 font-normal"> (default: {business.deposit_pct}%)</span>
+              )}
+            </p>
             <div className="flex gap-2">
               {[0, 25, 30, 50].map(pct => (
                 <button key={pct} onClick={() => { setDepositPct(pct); setSaved(false) }}
@@ -329,6 +343,8 @@ export default function LeadPage({ params }) {
               ))}
             </div>
           </div>
+
+          {/* Payment methods */}
           <div>
             <p className="text-xs font-medium text-gray-600 mb-2">Payment methods</p>
             <div className="space-y-2">
