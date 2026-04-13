@@ -29,7 +29,8 @@ export default function LeadPage({ params }) {
   const [editModal, setEditModal] = useState(false)
   const [editForm, setEditForm] = useState({})
   const [smsModal, setSmsModal] = useState(false)
-  const [smsPhone, setSmsPhone] = useState('')  const router = useRouter()
+  const [smsPhone, setSmsPhone] = useState('')
+  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => { if (user) fetchData() }, [user])
