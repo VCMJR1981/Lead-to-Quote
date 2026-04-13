@@ -631,6 +631,11 @@ export default function LeadPage({ params }) {
               className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50">
               Preview
             </button>
+            <button onClick={() => { if(quoteId) window.open(`/quote/${quoteId}/print`, '_blank') }}
+              disabled={!quoteId}
+              className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50 disabled:opacity-40">
+              📄 PDF
+            </button>
           </div>
           <div className="flex gap-2">
             <button onClick={sendWhatsApp} disabled={grandTotal===0}

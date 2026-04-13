@@ -338,6 +338,13 @@ export default function QuotePage({ params }) {
           </div>
         )}
 
+        {/* PDF download */}
+        <button
+          onClick={() => window.open(`/quote/${params.id}/print`, '_blank')}
+          className="w-full flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-600 hover:border-brand hover:text-brand transition-colors">
+          📄 Download PDF
+        </button>
+
         <p className="text-center text-xs text-gray-400 pb-4">
           Powered by <span className="text-brand">Lead-to-Quote</span>
         </p>
