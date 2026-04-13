@@ -286,7 +286,7 @@ export default function QuotePage({ params }) {
             )}
 
             {/* Cash */}
-            {(quote?.payment_methods || []).includes('cash') && (
+            {paymentMethods.includes('cash') && (
               <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
                 <span className="text-xl">💵</span>
                 <div>
@@ -296,7 +296,6 @@ export default function QuotePage({ params }) {
               </div>
             )}
           </div>
-        )}
 
         {/* Legal disclaimer */}
         <div className="rounded-2xl p-4 bg-gray-50 border border-gray-200">
