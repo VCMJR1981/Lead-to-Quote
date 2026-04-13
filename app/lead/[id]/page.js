@@ -26,6 +26,8 @@ export default function LeadPage({ params }) {
   const [emailInput, setEmailInput] = useState('')
   const [emailSending, setEmailSending] = useState(false)
   const [ratesLoaded, setRatesLoaded] = useState(false)
+  const [editModal, setEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({})
   const router = useRouter()
   const supabase = createClient()
 
@@ -44,6 +46,7 @@ export default function LeadPage({ params }) {
     setLead(ld)
     setLeadStatus(ld.status)
     setEmailInput(ld.email || '')
+    setEditForm({ name: ld.name, phone: ld.phone || '', email: ld.email || '', job_type: ld.job_type || '', description: ld.description || '' })
 
     const { data: qt } = await supabase.from('quotes').select('*').eq('lead_id', params.id).maybeSingle()
     if (qt) {
@@ -145,6 +148,25 @@ export default function LeadPage({ params }) {
     return id
   }
 
+  async function saveEdit() {
+    await supabase.from('leads').update({
+      name: editForm.name,
+      phone: editForm.phone || null,
+      email: editForm.email || null,
+      job_type: editForm.job_type || null,
+      description: editForm.description || null,
+    }).eq('id', lead.id)
+    setLead(prev => ({ ...prev, ...editForm }))
+    setEmailInput(editForm.email || '')
+    setEditModal(false)
+  }
+
+  async function deleteLead() {
+    if (!confirm('Delete this lead and its quote? This cannot be undone.')) return
+    await supabase.from('leads').delete().eq('id', lead.id)
+    router.push('/')
+  }
+
   async function markStatus(status) {
     await supabase.from('leads').update({ status }).eq('id', lead.id)
     setLeadStatus(status)
@@ -196,23 +218,30 @@ export default function LeadPage({ params }) {
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/')} className="text-gray-400 p-1 -ml-1">
+          <button onClick={() => router.push('/')} className="text-gray-600 p-1 -ml-1">
             <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
               <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <div className="flex-1">
             <h2 className="text-lg font-bold font-heading text-gray-900">{lead?.name}</h2>
-            <p className="text-xs text-gray-400">{lead?.job_type || 'No job type'} · {lead?.phone || '—'}</p>
+            <p className="text-xs text-gray-600">
+              {lead?.job_type || ''}{lead?.job_type && lead?.phone ? ' · ' : ''}{lead?.phone || ''}
+              {!lead?.job_type && !lead?.phone ? '—' : ''}
+            </p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setEditModal(true)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-600">
+              ✏️ Edit
+            </button>
             <button onClick={() => markStatus('won')}
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                leadStatus==='won' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'
+                leadStatus==='won' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-600 border-gray-200'
               }`}>✓ Won</button>
             <button onClick={() => markStatus('lost')}
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                leadStatus==='lost' ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-gray-50 text-gray-400 border-gray-200'
+                leadStatus==='lost' ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-gray-50 text-gray-600 border-gray-200'
               }`}>✕ Lost</button>
           </div>
         </div>
@@ -261,7 +290,7 @@ export default function LeadPage({ params }) {
               <span className="font-semibold text-sm font-heading text-gray-700">{section.tradeName}</span>
               {sections.length > 1 && (
                 <button onClick={() => { setSections(p => p.filter(s => s.id !== section.id)); setSaved(false) }}
-                  className="text-gray-300 text-xs hover:text-red-400">Remove</button>
+                  className="text-gray-500 text-xs hover:text-red-400">Remove</button>
               )}
             </div>
             <div className="divide-y divide-gray-50">
@@ -273,7 +302,7 @@ export default function LeadPage({ params }) {
                       className="flex-1 text-sm text-gray-900 bg-transparent focus:outline-none placeholder-gray-300"
                     />
                     <button onClick={() => removeItem(section.id, item.id)}
-                      className="text-gray-200 hover:text-red-400 transition-colors">
+                      className="text-gray-400 hover:text-red-400 transition-colors">
                       <svg width="14" height="14" fill="none" viewBox="0 0 14 14">
                         <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                       </svg>
@@ -281,13 +310,13 @@ export default function LeadPage({ params }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-1.5">
-                      <span className="text-xs text-gray-400">Qty</span>
+                      <span className="text-xs text-gray-600">Qty</span>
                       <input type="number" value={item.qty} onChange={e => updItem(section.id, item.id, 'qty', e.target.value)}
                         className="w-12 text-sm text-gray-900 bg-transparent focus:outline-none text-center" min="0" step="0.5"/>
                     </div>
-                    <span className="text-gray-200">×</span>
+                    <span className="text-gray-400">×</span>
                     <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-1.5 flex-1">
-                      <span className="text-xs text-gray-400">{sym}</span>
+                      <span className="text-xs text-gray-600">{sym}</span>
                       <input type="number" value={item.unit_price} onChange={e => updItem(section.id, item.id, 'unit_price', e.target.value)}
                         className="flex-1 text-sm text-gray-900 bg-transparent focus:outline-none" min="0" step="0.01" placeholder="0.00"/>
                     </div>
@@ -304,7 +333,7 @@ export default function LeadPage({ params }) {
         ))}
 
         <button onClick={() => setAddSecOpen(true)}
-          className="w-full bg-white border-2 border-dashed border-gray-200 rounded-2xl py-4 text-sm font-medium text-gray-400 hover:border-brand hover:text-brand transition-colors">
+          className="w-full bg-white border-2 border-dashed border-gray-200 rounded-2xl py-4 text-sm font-medium text-gray-600 hover:border-brand hover:text-brand transition-colors">
           + Add another trade section
         </button>
 
@@ -321,7 +350,7 @@ export default function LeadPage({ params }) {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold font-heading text-gray-500 uppercase tracking-wide">Payment Settings</p>
-            <span className="text-xs text-gray-400">From your profile · override below</span>
+            <span className="text-xs text-gray-600">From your profile · override below</span>
           </div>
 
           {/* Deposit override */}
@@ -329,14 +358,14 @@ export default function LeadPage({ params }) {
             <p className="text-xs font-medium text-gray-600 mb-2">
               Deposit for this quote
               {business?.deposit_pct > 0 && (
-                <span className="text-gray-400 font-normal"> (default: {business.deposit_pct}%)</span>
+                <span className="text-gray-600 font-normal"> (default: {business.deposit_pct}%)</span>
               )}
             </p>
             <div className="flex gap-2">
               {[0, 25, 30, 50].map(pct => (
                 <button key={pct} onClick={() => { setDepositPct(pct); setSaved(false) }}
                   className={`flex-1 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
-                    depositPct===pct ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-400'
+                    depositPct===pct ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-600'
                   }`}>
                   {pct===0 ? 'None' : `${pct}%`}
                 </button>
@@ -362,7 +391,7 @@ export default function LeadPage({ params }) {
                   <span className="text-lg">{m.icon}</span>
                   <div className="flex-1">
                     <p className={`text-sm font-semibold ${payMethods.includes(m.key) ? 'text-brand' : 'text-gray-700'}`}>{m.label}</p>
-                    {m.sub && <p className="text-xs text-gray-400">{m.sub}</p>}
+                    {m.sub && <p className="text-xs text-gray-600">{m.sub}</p>}
                   </div>
                   <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${
                     payMethods.includes(m.key) ? 'bg-brand border-brand' : 'border-gray-300'
@@ -403,7 +432,7 @@ export default function LeadPage({ params }) {
                 <span className="text-amber-700 font-semibold">Deposit ({depositPct}%)</span>
                 <span className="font-bold text-amber-700">{fmt(grandTotal * depositPct / 100)}</span>
               </div>
-              <div className="flex justify-between text-xs text-gray-400 px-2">
+              <div className="flex justify-between text-xs text-gray-600 px-2">
                 <span>Remaining on completion</span>
                 <span>{fmt(grandTotal * (1 - depositPct/100))}</span>
               </div>
@@ -413,8 +442,8 @@ export default function LeadPage({ params }) {
 
         {/* Legal disclaimer */}
         <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Important Notice</p>
-          <p className="text-xs text-gray-400 leading-relaxed">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Important Notice</p>
+          <p className="text-xs text-gray-600 leading-relaxed">
             This quotation is based on information available at the time of assessment. Final costs may vary due to unforeseen site conditions, material price changes, or variations in scope requested by the client. Any changes will be communicated and approved in writing before proceeding.
           </p>
         </div>
@@ -476,7 +505,7 @@ export default function LeadPage({ params }) {
               </div>
               <div>
                 <h3 className="text-base font-bold font-heading text-gray-900">No email on file</h3>
-                <p className="text-sm text-gray-400">Add {lead?.name?.split(' ')[0]}{"'s"} email to send the quote.</p>
+                <p className="text-sm text-gray-600">Add {lead?.name?.split(' ')[0]}{"'s"} email to send the quote.</p>
               </div>
             </div>
             <input type="email" value={emailInput} onChange={e => setEmailInput(e.target.value)}
@@ -492,6 +521,47 @@ export default function LeadPage({ params }) {
                 disabled={!emailInput || emailSending}
                 className="flex-2 flex-grow bg-blue-600 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50">
                 {emailSending ? 'Sending...' : 'Save & send ✉️'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit client modal */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => setEditModal(false)}>
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <h3 className="text-lg font-bold font-heading text-gray-900 mb-5">Edit client details</h3>
+            <div className="space-y-4">
+              {[
+                { field: 'name',        label: 'Name *',       placeholder: 'Client name',         type: 'text' },
+                { field: 'phone',       label: 'Phone',        placeholder: '+1 555 000 0000',     type: 'tel' },
+                { field: 'email',       label: 'Email',        placeholder: 'client@example.com',  type: 'email' },
+                { field: 'job_type',    label: 'Job type',     placeholder: 'e.g. Boiler repair',  type: 'text' },
+                { field: 'description', label: 'Description',  placeholder: 'Job details...',      type: 'text' },
+              ].map(({ field, label, placeholder, type }) => (
+                <div key={field}>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+                  <input type={type} value={editForm[field] || ''}
+                    onChange={e => setEditForm(p => ({ ...p, [field]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-6">
+              <button onClick={deleteLead}
+                className="px-4 py-3 border border-red-200 text-red-500 font-semibold text-sm rounded-xl">
+                🗑 Delete
+              </button>
+              <button onClick={() => setEditModal(false)}
+                className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-3 rounded-xl">
+                Cancel
+              </button>
+              <button onClick={saveEdit} disabled={!editForm.name}
+                className="flex-1 brand-gradient text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50">
+                Save changes
               </button>
             </div>
           </div>

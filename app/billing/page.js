@@ -94,14 +94,14 @@ function BillingContent() {
       <div className="bg-white border-b border-gray-100 px-4 pt-14 pb-4 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/')}
-            className="text-gray-400 p-1 -ml-1">
+            className="text-gray-600 p-1 -ml-1">
             <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
               <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <div>
             <h1 className="text-lg font-bold font-heading text-gray-900">Billing & Payments</h1>
-            <p className="text-xs text-gray-400">Your subscription and payment setup</p>
+            <p className="text-xs text-gray-600">Your subscription and payment setup</p>
           </div>
         </div>
       </div>
@@ -122,7 +122,7 @@ function BillingContent() {
 
         {/* ── SECTION 1: Your subscription ── */}
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
             Your subscription
           </p>
 
@@ -138,12 +138,12 @@ function BillingContent() {
                   Lead-to-Quote · {price}/mo
                 </p>
                 {status === 'trialing' && trialEnd && (
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-gray-600 mt-1">
                     Trial ends {trialEnd}. No charge until then.
                   </p>
                 )}
                 {status === 'active' && business?.current_period_end && (
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-gray-600 mt-1">
                     Next billing: {new Date(business.current_period_end).toLocaleDateString()}
                   </p>
                 )}
@@ -153,7 +153,7 @@ function BillingContent() {
                   </p>
                 )}
                 {status === 'canceled' && (
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-gray-600 mt-1">
                     Subscription ended. Resubscribe to continue.
                   </p>
                 )}
@@ -166,7 +166,7 @@ function BillingContent() {
 
           {/* What's included */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
               Everything included
             </p>
             <div className="grid grid-cols-2 gap-y-2">
@@ -197,7 +197,7 @@ function BillingContent() {
 
         {/* ── SECTION 2: Stripe Connect ── */}
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
             Receive client payments
           </p>
 
@@ -209,13 +209,13 @@ function BillingContent() {
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900 text-sm">Stripe connected ✓</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-600 mt-0.5">
                     Clients can pay deposits and invoices by card. Fee is added to their total.
                   </p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-gray-50">
-                <div className="flex justify-between text-xs text-gray-400">
+                <div className="flex justify-between text-xs text-gray-600">
                   <span>Card fee (paid by client)</span>
                   <span className="font-medium text-gray-600">
                     {business?.currency === 'EUR' ? '1.5% + €0.25' : '2.9% + $0.30'}
@@ -231,7 +231,7 @@ function BillingContent() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">Connect with Stripe</p>
-                  <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                     Let clients pay deposits and invoices by card. The Stripe fee is added to
                     their total — you receive the full quote amount.
                   </p>
@@ -255,7 +255,7 @@ function BillingContent() {
                 {connectLoading ? 'Redirecting to Stripe...' : 'Connect with Stripe →'}
               </button>
               {!isActive && (
-                <p className="text-xs text-gray-400 text-center mt-2">
+                <p className="text-xs text-gray-600 text-center mt-2">
                   Activate your subscription first
                 </p>
               )}
@@ -263,7 +263,7 @@ function BillingContent() {
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-300">
+        <p className="text-center text-xs text-gray-500">
           Powered by Stripe · Cancel anytime · No lock-in
         </p>
       </div>

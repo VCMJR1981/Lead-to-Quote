@@ -127,7 +127,7 @@ export default function IntakeFormPage({ params }) {
           )}
           <div>
             <h1 className="font-bold text-gray-900 font-heading">{business?.name}</h1>
-            {business?.tagline && <p className="text-sm text-gray-400">{business.tagline}</p>}
+            {business?.tagline && <p className="text-sm text-gray-600">{business.tagline}</p>}
             {business?.phone && <p className="text-sm text-gray-500">{business.phone}</p>}
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function IntakeFormPage({ params }) {
       <div className="max-w-lg mx-auto px-4 py-6 pb-12">
         <div className="mb-6">
           <h2 className="text-2xl font-bold font-heading text-gray-900">{T.title}</h2>
-          <p className="text-gray-400 text-sm mt-1">{T.subtitle}</p>
+          <p className="text-gray-600 text-sm mt-1">{T.subtitle}</p>
         </div>
 
         {error && (

@@ -54,7 +54,7 @@ export default function LoginPage() {
             <span className="text-white text-base font-bold font-heading">L2Q</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 font-heading">Lead-to-Quote</h1>
-          <p className="text-gray-400 text-sm mt-1">Quote faster. Win more jobs.</p>
+          <p className="text-gray-600 text-sm mt-1">Quote faster. Win more jobs.</p>
         </div>
 
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
@@ -98,7 +98,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-400 mt-5">
+          <p className="text-center text-sm text-gray-600 mt-5">
             {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
             <button
               onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setSuccess('') }}
@@ -108,7 +108,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-300 mt-6">
+        <p className="text-center text-xs text-gray-500 mt-6">
           14 days free · No credit card required
         </p>
       </div>
