@@ -183,6 +183,16 @@ export default function LeadPage({ params }) {
     window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank')
   }
 
+  async function sendSMS() {
+    const id = await saveQuote()
+    await supabase.from('quotes').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', id)
+    await markStatus('quoted')
+    const quoteUrl = `${window.location.origin}/quote/${id}`
+    const msg = encodeURIComponent(`Hi ${lead.name}, your quote from ${business.name} is ready: ${quoteUrl}`)
+    const phone = lead.phone ? lead.phone.replace(/\D/g, '') : ''
+    window.open(`sms:${phone}?body=${msg}`, '_blank')
+  }
+
   async function sendEmail() {
     if (!lead.email && !emailInput) { setEmailModal(true); return }
     doSendEmail(lead.email || emailInput)
@@ -467,6 +477,10 @@ export default function LeadPage({ params }) {
               className="flex-1 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
               style={{ background: '#25D366' }}>
               📱 WhatsApp
+            </button>
+            <button onClick={sendSMS} disabled={grandTotal===0}
+              className="flex-1 bg-purple-600 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
+              💬 SMS
             </button>
             <button onClick={sendEmail} disabled={emailSending || grandTotal===0}
               className="flex-1 bg-blue-600 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">

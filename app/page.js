@@ -231,9 +231,13 @@ export default function Dashboard() {
             className={`text-white text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0 transition-colors ${copied ? 'bg-green-500' : 'brand-gradient'}`}>
             {copied ? '✓ Copied!' : 'Copy link'}
           </button>
+          <Link href="/clients"
+            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
+            👥 Clients
+          </Link>
           <Link href="/rates"
             className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            ⚙ Rates
+            ⚡ Rates
           </Link>
           <Link href="/settings"
             className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
