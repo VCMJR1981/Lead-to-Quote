@@ -1,29 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
-const PUBLIC = [
-  '/form',
-  '/quote',
-  '/login',
-  '/auth',
-  '/api/stripe/webhook',
-  '/api/stripe/connect/webhook',
-  '/api/stripe/connect/callback',
-]
-
-const BILLING_OK = [
-  '/billing',
-  '/onboarding',
-  '/api/stripe',
-]
-
 export async function middleware(request) {
-  let response = NextResponse.next({ request })
-  const { pathname } = request.nextUrl
-
-  // Allow public routes
-  const isPublic = PUBLIC.some(p => pathname.startsWith(p))
-  if (isPublic) return response
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -37,25 +16,46 @@ export async function middleware(request) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          response = NextResponse.next({ request })
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
     }
   )
 
+  // IMPORTANT: Do not add logic between createServerClient and getUser
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Not logged in — go to login
+  const { pathname } = request.nextUrl
+
+  // Public routes — no auth needed
+  const isPublic =
+    pathname.startsWith('/form') ||
+    pathname.startsWith('/quote') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/api/stripe/webhook') ||
+    pathname.startsWith('/api/stripe/connect/webhook') ||
+    pathname.startsWith('/api/stripe/connect/callback')
+
+  if (isPublic) return supabaseResponse
+
+  // Not logged in
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
-  // Billing and onboarding always accessible when logged in
-  const isBillingOk = BILLING_OK.some(p => pathname.startsWith(p))
-  if (isBillingOk) return response
+  // Billing/onboarding always accessible when logged in
+  const isBillingOk =
+    pathname.startsWith('/billing') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/api/stripe')
+
+  if (isBillingOk) return supabaseResponse
 
   // Subscription gate
   const { data: business } = await supabase
@@ -76,13 +76,17 @@ export async function middleware(request) {
       trialExpired
 
     if (blocked) {
-      return NextResponse.redirect(new URL('/billing', request.url))
+      const url = request.nextUrl.clone()
+      url.pathname = '/billing'
+      return NextResponse.redirect(url)
     }
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

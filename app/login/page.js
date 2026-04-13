@@ -20,32 +20,28 @@ export default function LoginPage() {
     const supabase = createClient()
 
     if (mode === 'login') {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         setError(error.message)
         setLoading(false)
         return
       }
-      if (data?.session) {
-        window.location.replace('/')
-      } else {
-        setError('Sign in failed. Please try again.')
-        setLoading(false)
-      }
+      // Hard redirect so middleware picks up the new session cookie
+      window.location.href = '/'
     } else {
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       })
       if (error) {
         setError(error.message)
         setLoading(false)
         return
       }
-      setSuccess('Account created! Check your email to confirm, then sign in.')
+      setSuccess('Check your email to confirm your account, then sign in.')
       setLoading(false)
     }
   }
@@ -53,17 +49,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
-
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 brand-gradient rounded-2xl mb-4 shadow-lg shadow-orange-200">
-            <span className="text-white text-xl font-bold font-heading">L2Q</span>
+            <span className="text-white text-base font-bold font-heading">L2Q</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 font-heading">Lead-to-Quote</h1>
           <p className="text-gray-400 text-sm mt-1">Quote faster. Win more jobs.</p>
         </div>
 
-        {/* Card */}
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-bold text-gray-900 font-heading mb-5">
             {mode === 'login' ? 'Sign in' : 'Create account'}
@@ -74,7 +67,6 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-
           {success && (
             <div className="bg-green-50 border border-green-100 text-green-700 text-sm rounded-xl p-3 mb-4">
               {success}
@@ -87,7 +79,7 @@ export default function LoginPage() {
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 required placeholder="you@example.com"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
             </div>
             <div>
@@ -95,14 +87,14 @@ export default function LoginPage() {
               <input
                 type="password" value={password} onChange={e => setPassword(e.target.value)}
                 required placeholder="••••••••" minLength={6}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
             </div>
             <button
               type="submit" disabled={loading}
-              className="w-full brand-gradient text-white rounded-xl py-3.5 font-semibold text-sm disabled:opacity-60 hover:opacity-90 transition-opacity shadow-sm"
+              className="w-full brand-gradient text-white rounded-xl py-3.5 font-semibold text-sm disabled:opacity-60"
             >
-              {loading ? 'Signing in...' : mode === 'login' ? 'Sign in' : 'Create account'}
+              {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
           </form>
 
