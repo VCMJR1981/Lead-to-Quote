@@ -19,6 +19,8 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [signingOut, setSigningOut] = useState(false)
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -38,12 +40,27 @@ export default function SettingsPage() {
   async function save() {
     setSaving(true)
     setError('')
+
+    let logo_url = business.logo_url
+    if (logoFile) {
+      const ext = logoFile.name.split('.').pop()
+      const path = `logos/${user.id}-${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('business-assets')
+        .upload(path, logoFile, { upsert: true })
+      if (!uploadError) {
+        const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+        logo_url = data.publicUrl
+      }
+    }
+
     const { error } = await supabase.from('businesses').update({
       name: business.name,
       phone: business.phone,
       email: business.email,
       address: business.address,
       tagline: business.tagline,
+      logo_url,
       industry: business.industry,
       deposit_pct: business.deposit_pct,
       payment_methods: business.payment_methods,
@@ -97,6 +114,36 @@ export default function SettingsPage() {
         <div>
           <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Business Details</p>
           <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
+
+            {/* Logo */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-2">Business logo</label>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
+                  {(logoPreview || business.logo_url) ? (
+                    <img src={logoPreview || business.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl">🏢</span>
+                  )}
+                </div>
+                <div>
+                  <input type="file" accept="image/*" id="logo-upload" className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setLogoFile(file)
+                      setLogoPreview(URL.createObjectURL(file))
+                      setSaved(false)
+                    }}
+                  />
+                  <label htmlFor="logo-upload"
+                    className="inline-block cursor-pointer bg-white border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl hover:border-brand hover:text-brand transition-colors">
+                    {(logoPreview || business.logo_url) ? 'Change logo' : 'Upload logo'}
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">PNG or JPG · Appears on all quotes</p>
+                </div>
+              </div>
+            </div>
             {[
               { field: 'name',    label: 'Business name',  placeholder: "Mike's Plumbing",  type: 'text' },
               { field: 'phone',   label: 'Phone number',   placeholder: '+1 555 000 0000',  type: 'tel' },

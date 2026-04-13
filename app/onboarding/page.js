@@ -32,7 +32,7 @@ export default function OnboardingPage() {
   const [form, setForm] = useState({
     name: '', phone: '', email: '',
     address_street: '', address_city: '', address_state: '', address_zip: '',
-    tagline: '',
+    tagline: '', logo_url: '',
     country: null,
     industry: '',
     deposit_pct: 30,
@@ -41,6 +41,8 @@ export default function OnboardingPage() {
     vat_registered: false,
     vat_number: '',
   })
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
 
   const set = (f, v) => setForm(p => ({ ...p, [f]: v }))
   const cfg = form.country ? COUNTRY_CONFIG[form.country] : null
@@ -59,6 +61,21 @@ export default function OnboardingPage() {
     const slug = slugify(form.name) + '-' + Math.random().toString(36).slice(2, 6)
     const addressParts = [form.address_street, form.address_city, form.address_state, form.address_zip].filter(Boolean)
     const address = addressParts.join(', ') || null
+
+    // Upload logo if provided
+    let logo_url = null
+    if (logoFile) {
+      const ext = logoFile.name.split('.').pop()
+      const path = `logos/${user.id}-${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('business-assets')
+        .upload(path, logoFile, { upsert: true })
+      if (!uploadError) {
+        const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+        logo_url = data.publicUrl
+      }
+    }
+
     const { error } = await supabase.from('businesses').insert({
       owner_id: user.id,
       name: form.name,
@@ -67,6 +84,7 @@ export default function OnboardingPage() {
       email: form.email || null,
       address,
       tagline: form.tagline || null,
+      logo_url,
       country: form.country,
       language: cfg?.language || 'en',
       currency: cfg?.currency || 'USD',
@@ -293,6 +311,37 @@ export default function OnboardingPage() {
             <h2 className="text-2xl font-bold font-heading text-gray-900 mb-2">Your business details</h2>
             <p className="text-gray-600 text-sm mb-6">Shown on every quote. Only name is required.</p>
             <div className="space-y-4">
+
+              {/* Logo upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Business logo (optional)</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl">🏢</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file" accept="image/*" id="logo-upload"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        setLogoFile(file)
+                        setLogoPreview(URL.createObjectURL(file))
+                      }}
+                    />
+                    <label htmlFor="logo-upload"
+                      className="inline-block cursor-pointer bg-white border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl hover:border-brand hover:text-brand transition-colors">
+                      {logoPreview ? 'Change logo' : 'Upload logo'}
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1.5">PNG or JPG · Max 2MB · Appears on all quotes</p>
+                  </div>
+                </div>
+              </div>
               {[
                 { field: 'name',    label: 'Business name *',    placeholder: "Mike's Plumbing",              type: 'text' },
                 { field: 'phone',   label: 'Phone number',       placeholder: cfg?.phone || '+1 555 000 0000', type: 'tel' },
@@ -307,6 +356,50 @@ export default function OnboardingPage() {
                   />
                 </div>
               ))}
+
+              {/* Logo upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Business logo <span className="text-gray-500 font-normal">(optional)</span>
+                </label>
+                <div className="flex items-center gap-4">
+                  {logoPreview ? (
+                    <div className="relative">
+                      <img src={logoPreview} alt="Logo preview"
+                        className="w-16 h-16 rounded-2xl object-cover border border-gray-200" />
+                      <button onClick={() => { setLogoFile(null); setLogoPreview(null) }}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 brand-gradient rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-xl font-bold font-heading">
+                        {form.name?.[0]?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                  )}
+                  <label className="flex-1 cursor-pointer">
+                    <div className="border-2 border-dashed border-gray-200 rounded-xl px-4 py-3 text-center hover:border-brand transition-colors">
+                      <p className="text-sm font-medium text-gray-600">
+                        {logoPreview ? 'Change logo' : 'Upload logo'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">PNG, JPG up to 2MB</p>
+                    </div>
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        setLogoFile(file)
+                        setLogoPreview(URL.createObjectURL(file))
+                      }}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Appears at the top of every quote. Makes your quotes look professional.
+                </p>
+              </div>
 
               {/* Structured address */}
               <div>

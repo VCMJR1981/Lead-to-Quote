@@ -53,6 +53,25 @@ export default function Dashboard() {
     setDataLoading(false)
   }
 
+  const [repeatClient, setRepeatClient] = useState(null)
+
+  async function checkRepeat(phone, name) {
+    if (!phone && !name) return
+    const { data } = await supabase
+      .from('leads')
+      .select('*, quotes(total)')
+      .eq('business_id', activeBusiness?.id)
+      .neq('status', 'new')
+      .or(phone ? `phone.eq.${phone}` : `name.ilike.${name}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+    if (data?.length > 0) {
+      setRepeatClient(data[0])
+    } else {
+      setRepeatClient(null)
+    }
+  }
+
   async function createLead(e) {
     e.preventDefault()
     if (!newName || !activeBusiness) return
@@ -60,7 +79,7 @@ export default function Dashboard() {
       .from('leads')
       .insert({ name: newName, phone: newPhone, business_id: activeBusiness.id, status: 'new', source: 'manual' })
       .select().single()
-    if (data) { setAddOpen(false); setNewName(''); setNewPhone(''); router.push(`/lead/${data.id}`) }
+    if (data) { setAddOpen(false); setNewName(''); setNewPhone(''); setRepeatClient(null); router.push(`/lead/${data.id}`) }
   }
 
   async function signOut() {
@@ -245,9 +264,17 @@ export default function Dashboard() {
             className={`text-white text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0 transition-colors ${copied ? 'bg-green-500' : 'brand-gradient'}`}>
             {copied ? '✓ Copied!' : 'Copy link'}
           </button>
+          <Link href="/revenue"
+            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
+            📊 Revenue
+          </Link>
           <Link href="/clients"
             className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
             👥 Clients
+          </Link>
+          <Link href="/revenue"
+            className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
+            📊 Revenue
           </Link>
           <Link href="/rates"
             className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
@@ -262,17 +289,36 @@ export default function Dashboard() {
 
       {/* Add lead modal */}
       {addOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => setAddOpen(false)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => { setAddOpen(false); setRepeatClient(null) }}>
           <form onSubmit={createLead} className="bg-white w-full rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
             <h3 className="text-lg font-bold font-heading text-gray-900 mb-5">New lead</h3>
+
+            {/* Repeat client flag */}
+            {repeatClient && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex gap-2">
+                <span className="text-lg flex-shrink-0">👋</span>
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">You've worked with this client before</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Last job: {repeatClient.job_type || 'No job type'} ·{' '}
+                    {repeatClient.quotes?.[0]?.total
+                      ? formatCurrency(repeatClient.quotes[0].total, activeBusiness?.currency)
+                      : 'No quote'} ·{' '}
+                    Status: {repeatClient.status}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               <input type="text" placeholder="Customer name *" value={newName}
-                onChange={e => setNewName(e.target.value)} required autoFocus
+                onChange={e => { setNewName(e.target.value); if (e.target.value.length > 2) checkRepeat(newPhone, e.target.value) }}
+                required autoFocus
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
               />
               <input type="tel" placeholder="Phone number" value={newPhone}
-                onChange={e => setNewPhone(e.target.value)}
+                onChange={e => { setNewPhone(e.target.value); if (e.target.value.length > 6) checkRepeat(e.target.value, newName) }}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand"
               />
               <button type="submit" className="w-full brand-gradient text-white rounded-xl py-3.5 font-semibold text-sm">

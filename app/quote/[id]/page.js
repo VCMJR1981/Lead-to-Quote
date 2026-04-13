@@ -166,6 +166,20 @@ export default function QuotePage({ params }) {
           </div>
         )}
 
+        {/* Job site photo */}
+        {quote?.photo_url && (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-4 pt-3 pb-2">
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Job Site Photo</p>
+            </div>
+            <img src={quote.photo_url} alt="Job site"
+              className="w-full object-cover max-h-64" />
+            <div className="px-4 py-2">
+              <p className="text-xs text-gray-600">📷 Photo taken during site visit</p>
+            </div>
+          </div>
+        )}
+
         {/* Totals */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
           <div className="flex justify-between text-sm">

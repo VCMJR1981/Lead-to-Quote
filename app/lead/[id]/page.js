@@ -30,6 +30,11 @@ export default function LeadPage({ params }) {
   const [editForm, setEditForm] = useState({})
   const [smsModal, setSmsModal] = useState(false)
   const [smsPhone, setSmsPhone] = useState('')
+  const [photoUrl, setPhotoUrl] = useState(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [repeatClient, setRepeatClient] = useState(null)
+  const [photoUrl, setPhotoUrl] = useState(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -50,6 +55,29 @@ export default function LeadPage({ params }) {
     setEmailInput(ld.email || '')
     setEditForm({ name: ld.name, phone: ld.phone || '', email: ld.email || '', job_type: ld.job_type || '', description: ld.description || '' })
 
+    // Repeat client detection — check for same phone or email in other leads
+    if (ld.phone || ld.email) {
+      const orConditions = []
+      if (ld.phone) orConditions.push(`phone.eq.${ld.phone}`)
+      if (ld.email) orConditions.push(`email.eq.${ld.email}`)
+      const { data: prevLeads } = await supabase
+        .from('leads')
+        .select('id, job_type, created_at, quotes(total)')
+        .eq('business_id', biz.id)
+        .neq('id', params.id)
+        .or(orConditions.join(','))
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (prevLeads?.length > 0) {
+        const prev = prevLeads[0]
+        setRepeatClient({
+          jobType: prev.job_type || 'Previous job',
+          total: prev.quotes?.[0]?.total || 0,
+          date: new Date(prev.created_at).toLocaleDateString(),
+        })
+      }
+    }
+
     const { data: qt } = await supabase.from('quotes').select('*').eq('lead_id', params.id).maybeSingle()
     if (qt) {
       setQuoteId(qt.id)
@@ -57,6 +85,7 @@ export default function LeadPage({ params }) {
       setNotes(qt.notes || '')
       setDepositPct(qt.deposit_pct ?? biz.deposit_pct ?? 30)
       setPayMethods(qt.payment_methods || biz.payment_methods || ['bank', 'card'])
+      setPhotoUrl(qt.photo_url || null)
     } else {
       const tradeKey = biz.industry || 'handyman'
       const trade = getTrade(tradeKey)
@@ -157,6 +186,21 @@ export default function LeadPage({ params }) {
     setSaved(false)
   }
 
+  async function uploadPhoto(file) {
+    setPhotoUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `quotes/${lead.id}-${Date.now()}.${ext}`
+    const { error } = await supabase.storage
+      .from('business-assets')
+      .upload(path, file, { upsert: true })
+    if (!error) {
+      const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+      setPhotoUrl(data.publicUrl)
+      setSaved(false)
+    }
+    setPhotoUploading(false)
+  }
+
   async function saveQuote() {
     setSaving(true)
     const payload = {
@@ -166,6 +210,7 @@ export default function LeadPage({ params }) {
       stripe_fee: stripeFee, total: grandTotal,
       deposit_pct: depositPct, deposit_amount: grandTotal * depositPct / 100,
       payment_methods: payMethods, status: 'draft',
+      photo_url: photoUrl || null,
     }
     let id = quoteId
     if (quoteId) {
@@ -199,6 +244,21 @@ export default function LeadPage({ params }) {
     if (!confirm('Delete this lead and its quote? This cannot be undone.')) return
     await supabase.from('leads').delete().eq('id', lead.id)
     router.push('/')
+  }
+
+  async function uploadPhoto(file) {
+    setPhotoUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `quote-photos/${business.id}-${Date.now()}.${ext}`
+    const { error } = await supabase.storage
+      .from('business-assets')
+      .upload(path, file, { upsert: true })
+    if (!error) {
+      const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+      setPhotoUrl(data.publicUrl)
+      setSaved(false)
+    }
+    setPhotoUploading(false)
   }
 
   async function markStatus(status) {
@@ -323,6 +383,21 @@ export default function LeadPage({ params }) {
 
       {/* Content */}
       <div className="px-4 py-5 space-y-4 pb-40">
+
+        {/* Repeat client banner */}
+        {repeatClient && (
+          <div className="bg-purple-50 border border-purple-100 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <span className="text-xl flex-shrink-0">🔁</span>
+            <div>
+              <p className="text-sm font-semibold text-purple-900">Returning client</p>
+              <p className="text-xs text-purple-700">
+                Last job: {repeatClient.jobType}
+                {repeatClient.total > 0 ? ` · ${fmt(repeatClient.total)}` : ''}
+                {' · '}{repeatClient.date}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Load saved rates */}
         <button onClick={loadSavedRates} className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
@@ -496,6 +571,44 @@ export default function LeadPage({ params }) {
                 <span>{fmt(grandTotal * (1 - depositPct/100))}</span>
               </div>
             </>
+          )}
+        </div>
+
+        {/* Job site photo */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-semibold font-heading text-gray-600 uppercase tracking-wide mb-3">
+            Job Site Photo
+          </p>
+          {photoUrl ? (
+            <div className="relative">
+              <img src={photoUrl} alt="Job site" className="w-full h-48 object-cover rounded-xl" />
+              <button
+                onClick={() => { setPhotoUrl(null); setSaved(false) }}
+                className="absolute top-2 right-2 w-7 h-7 bg-red-500 rounded-full text-white text-sm flex items-center justify-center shadow">
+                ×
+              </button>
+              <p className="text-xs text-gray-600 mt-2">Photo attached to quote ✓</p>
+            </div>
+          ) : (
+            <label className="cursor-pointer block">
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-brand transition-colors">
+                {photoUploading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-gray-600">Uploading...</span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-2xl mb-2">📷</p>
+                    <p className="text-sm font-semibold text-gray-700">Add job site photo</p>
+                    <p className="text-xs text-gray-600 mt-1">Proves site visit · reduces disputes</p>
+                  </>
+                )}
+              </div>
+              <input type="file" accept="image/*" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f) }}
+              />
+            </label>
           )}
         </div>
 
