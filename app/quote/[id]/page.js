@@ -192,8 +192,85 @@ export default function QuotePage({ params }) {
           </div>
         )}
 
+        {/* Deposit info */}
+        {quote?.deposit_pct > 0 && (
+          <div className="rounded-2xl p-4 border" style={{ background: '#FFFBEB', borderColor: '#FDE68A' }}>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="font-semibold text-sm font-heading" style={{ color: '#92400E' }}>
+                  Deposit required to confirm
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
+                  {quote.deposit_pct}% upfront · Remainder due on completion
+                </p>
+              </div>
+              <p className="font-bold text-lg font-heading" style={{ color: '#92400E' }}>
+                {formatCurrency((quote.total || 0) * quote.deposit_pct / 100, currency)}
+              </p>
+            </div>
+            <div className="flex justify-between text-xs pt-2 border-t" style={{ borderColor: '#FDE68A', color: '#9CA3AF' }}>
+              <span>Remaining on completion</span>
+              <span>{formatCurrency((quote.total || 0) * (1 - quote.deposit_pct / 100), currency)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Payment methods */}
+        {quote?.payment_methods?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">How to pay</p>
+            <div className="space-y-2">
+              {quote.payment_methods.includes('bank') && (
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                  <span className="text-lg">🏦</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {business?.country === 'PT' ? 'IBAN Bank Transfer' : 'ACH Bank Transfer'}
+                    </p>
+                    {business?.bank_detail && (
+                      <p className="text-xs text-gray-400 mt-0.5">{business.bank_detail}</p>
+                    )}
+                  </div>
+                  <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                    No fee
+                  </span>
+                </div>
+              )}
+              {quote.payment_methods.includes('card') && (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-lg">💳</span>
+                    <div>
+                      <p className="text-sm font-semibold text-blue-800">Pay by Card (Stripe)</p>
+                      <p className="text-xs text-blue-500">
+                        Processing fee: {business?.country === 'US' ? '2.9% + $0.30' : '1.5% + €0.25'} — added to your total
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {quote.payment_methods.includes('cash') && (
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                  <span className="text-lg">💵</span>
+                  <p className="text-sm font-semibold text-gray-900">Cash on the day</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Legal disclaimer */}
+        <div className="rounded-2xl p-4" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#64748B' }}>
+            Important Notice
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>
+            This quotation is based on information available at the time of assessment and is valid for 30 days from the date issued. Final costs may vary due to unforeseen site conditions, changes in material prices, or variations in the scope of work requested by the client. Any changes to the agreed scope will be communicated and approved in writing before work proceeds. This quote does not constitute a binding contract until a deposit is received or written acceptance is confirmed by both parties. {business?.name} reserves the right to withdraw or amend this quote before acceptance.
+          </p>
+        </div>
+
         {/* Powered by */}
-        <p className="text-center text-xs text-gray-200 pb-6">
+        <p className="text-center text-xs text-gray-200 pb-8">
           Powered by <a href="/" className="hover:underline">Lead-to-Quote</a>
         </p>
       </div>

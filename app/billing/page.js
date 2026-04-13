@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { useAuth } from '@/lib/useAuth'
 
 const STATUS_LABELS = {
   trialing:   { label: 'Free Trial',  bg: '#EFF6FF', c: '#2563EB' },

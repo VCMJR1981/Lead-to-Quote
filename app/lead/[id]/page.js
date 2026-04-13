@@ -3,143 +3,136 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { useAuth } from '@/lib/useAuth'
 import { getTrade, getJobTypes, getDefaultItems, TRADE_LIST, formatCurrency } from '@/lib/trades'
 
 function genId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}` }
 
 export default function LeadPage({ params }) {
+  const { user, loading } = useAuth()
   const [lead, setLead] = useState(null)
   const [business, setBusiness] = useState(null)
   const [sections, setSections] = useState([])
   const [notes, setNotes] = useState('')
   const [quoteId, setQuoteId] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [depositPct, setDepositPct] = useState(30)
+  const [payMethods, setPayMethods] = useState(['bank', 'card'])
+  const [dataLoading, setDataLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [sending, setSending] = useState(false)
-  const [showAddSection, setShowAddSection] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [leadStatus, setLeadStatus] = useState('new')
+  const [addSecOpen, setAddSecOpen] = useState(false)
+  const [emailModal, setEmailModal] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
+  const [emailSending, setEmailSending] = useState(false)
+  const [ratesLoaded, setRatesLoaded] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { if (user) fetchData() }, [user])
 
   async function fetchData() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
-
     const { data: biz } = await supabase.from('businesses').select('*').eq('owner_id', user.id).single()
-    if (!biz) { router.push('/onboarding'); return }
+    if (!biz) { router.replace('/onboarding'); return }
     setBusiness(biz)
 
-    const { data: leadData } = await supabase.from('leads').select('*').eq('id', params.id).single()
-    if (!leadData) { router.push('/'); return }
-    setLead(leadData)
+    const { data: ld } = await supabase.from('leads').select('*').eq('id', params.id).single()
+    if (!ld) { router.replace('/'); return }
+    setLead(ld)
+    setLeadStatus(ld.status)
+    setEmailInput(ld.email || '')
 
-    const { data: quoteData } = await supabase
-      .from('quotes').select('*').eq('lead_id', params.id).maybeSingle()
-
-    if (quoteData) {
-      setQuoteId(quoteData.id)
-      setSections(quoteData.sections || [])
-      setNotes(quoteData.notes || '')
+    const { data: qt } = await supabase.from('quotes').select('*').eq('lead_id', params.id).maybeSingle()
+    if (qt) {
+      setQuoteId(qt.id)
+      setSections(qt.sections || [])
+      setNotes(qt.notes || '')
+      setDepositPct(qt.deposit_pct || 30)
     } else {
-      // Pre-load default template from business industry
       const tradeKey = biz.industry || 'handyman'
       const trade = getTrade(tradeKey)
-      setSections([{
-        id: genId(),
-        tradeKey,
-        tradeName: trade?.name || 'General',
-        items: getDefaultItems(tradeKey),
-      }])
+      setSections([{ id: genId(), tradeKey, tradeName: trade?.name || 'General', items: getDefaultItems(tradeKey) }])
     }
-    setLoading(false)
+    setDataLoading(false)
   }
 
-  // Calculations
-  const subtotal = sections.reduce((sum, sec) =>
-    sum + sec.items.reduce((s, item) => s + (item.total || 0), 0), 0)
-  const taxRate = business?.vat_registered ? (business?.vat_rate || 0) : 0
-  const taxAmount = subtotal * (taxRate / 100)
-  const total = subtotal + taxAmount
-
-  // Item management
-  function updateItem(secId, itemId, field, rawValue) {
-    const value = field === 'name' ? rawValue : parseFloat(rawValue) || 0
-    setSections(prev => prev.map(sec => {
-      if (sec.id !== secId) return sec
-      return {
-        ...sec,
-        items: sec.items.map(item => {
-          if (item.id !== itemId) return item
-          const updated = { ...item, [field]: value }
-          if (field === 'qty' || field === 'unit_price') {
-            updated.total = (updated.qty || 0) * (updated.unit_price || 0)
-          }
-          return updated
-        })
-      }
+  function loadSavedRates() {
+    if (!business) return
+    const stored = localStorage.getItem(`rates_${business.id}`)
+    if (!stored) { alert('No saved rates yet. Go to ⚙ Rates to set them up.'); return }
+    const rates = JSON.parse(stored)
+    setSections(prev => prev.map((sec, i) => {
+      if (i !== 0) return sec
+      const newItems = rates
+        .filter(r => r.name && !sec.items.find(it => it.name === r.name))
+        .map(r => ({ id: genId(), name: r.name, qty: 1, unit_price: r.unit_price, total: r.unit_price }))
+      return { ...sec, items: [...sec.items, ...newItems] }
     }))
+    setRatesLoaded(true)
     setSaved(false)
   }
 
-  function addItem(secId) {
+  // Calculations
+  const subtotal = sections.reduce((s, sec) => s + sec.items.reduce((ss, i) => ss + (i.total || 0), 0), 0)
+  const taxRate = business?.vat_registered ? (business?.vat_rate || 0) : 0
+  const taxAmount = subtotal * (taxRate / 100)
+  const stripeRate = business?.currency === 'USD' ? 0.029 : 0.015
+  const stripeFixed = business?.currency === 'USD' ? 0.30 : 0.25
+  const hasCard = payMethods.includes('card')
+  const stripeFee = hasCard ? subtotal * stripeRate + stripeFixed : 0
+  const total = subtotal + taxAmount
+  const grandTotal = total + stripeFee
+
+  function updItem(secId, itemId, field, val) {
+    setSaved(false)
     setSections(prev => prev.map(sec => {
       if (sec.id !== secId) return sec
-      return {
-        ...sec,
-        items: [...sec.items, { id: genId(), name: '', qty: 1, unit_price: 0, total: 0 }]
-      }
+      return { ...sec, items: sec.items.map(item => {
+        if (item.id !== itemId) return item
+        const u = { ...item, [field]: field === 'name' ? val : (parseFloat(val) || 0) }
+        u.total = u.qty * u.unit_price
+        return u
+      })}
+    }))
+  }
+
+  function addItem(secId) {
+    setSections(prev => prev.map(sec => sec.id !== secId ? sec : {
+      ...sec, items: [...sec.items, { id: genId(), name: '', qty: 1, unit_price: 0, total: 0 }]
     }))
   }
 
   function removeItem(secId, itemId) {
-    setSections(prev => prev.map(sec => {
-      if (sec.id !== secId) return sec
-      return { ...sec, items: sec.items.filter(i => i.id !== itemId) }
+    setSaved(false)
+    setSections(prev => prev.map(sec => sec.id !== secId ? sec : {
+      ...sec, items: sec.items.filter(i => i.id !== itemId)
     }))
-    setSaved(false)
-  }
-
-  function removeSection(secId) {
-    setSections(prev => prev.filter(s => s.id !== secId))
-    setSaved(false)
   }
 
   function addSection(tradeKey) {
     const trade = getTrade(tradeKey)
-    setSections(prev => [...prev, {
-      id: genId(),
-      tradeKey,
-      tradeName: trade?.name || tradeKey,
-      items: getDefaultItems(tradeKey),
-    }])
-    setShowAddSection(false)
+    setSections(prev => [...prev, { id: genId(), tradeKey, tradeName: trade?.name || tradeKey, items: getDefaultItems(tradeKey) }])
+    setAddSecOpen(false)
     setSaved(false)
   }
 
   async function saveQuote() {
     setSaving(true)
-    const quoteData = {
-      lead_id: lead.id,
-      business_id: business.id,
-      sections,
-      notes,
-      subtotal,
-      tax_rate: taxRate,
-      tax_amount: taxAmount,
-      total,
-      status: 'draft',
+    const payload = {
+      lead_id: lead.id, business_id: business.id,
+      sections, notes,
+      subtotal, tax_rate: taxRate, tax_amount: taxAmount,
+      stripe_fee: stripeFee, total: grandTotal,
+      deposit_pct: depositPct, deposit_amount: grandTotal * depositPct / 100,
+      payment_methods: payMethods, status: 'draft',
     }
-
     let id = quoteId
     if (quoteId) {
-      await supabase.from('quotes').update(quoteData).eq('id', quoteId)
+      await supabase.from('quotes').update(payload).eq('id', quoteId)
     } else {
-      const count = await supabase.from('quotes').select('id', { count: 'exact' }).eq('business_id', business.id)
-      const num = String((count.count || 0) + 1).padStart(4, '0')
-      const { data } = await supabase.from('quotes')
-        .insert({ ...quoteData, quote_number: `Q-${num}` }).select().single()
+      const { count } = await supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('business_id', business.id)
+      const num = String((count || 0) + 1).padStart(4, '0')
+      const { data } = await supabase.from('quotes').insert({ ...payload, quote_number: `Q-${num}`, status: 'draft' }).select().single()
       id = data?.id
       setQuoteId(id)
     }
@@ -148,37 +141,47 @@ export default function LeadPage({ params }) {
     return id
   }
 
-  async function sendViaWhatsApp() {
-    setSending(true)
-    const id = await saveQuote()
-
-    // Mark quote as sent
-    await supabase.from('quotes').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', id)
-    // Update lead status
-    await supabase.from('leads').update({ status: 'quoted' }).eq('id', lead.id)
-
-    const quoteUrl = `${window.location.origin}/quote/${id}`
-    const message = encodeURIComponent(
-      `Hi ${lead.name}, here is your quote from ${business.name}:\n\n${quoteUrl}\n\nLet me know if you have any questions!`
-    )
-    const phone = lead.phone ? lead.phone.replace(/\D/g, '') : ''
-    const waUrl = phone
-      ? `https://wa.me/${phone}?text=${message}`
-      : `https://wa.me/?text=${message}`
-
-    window.open(waUrl, '_blank')
-    setSending(false)
-
-    // Update local lead status
-    setLead(prev => ({ ...prev, status: 'quoted' }))
-  }
-
   async function markStatus(status) {
     await supabase.from('leads').update({ status }).eq('id', lead.id)
+    setLeadStatus(status)
     setLead(prev => ({ ...prev, status }))
   }
 
-  if (loading) return (
+  async function sendWhatsApp() {
+    const id = await saveQuote()
+    await supabase.from('quotes').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', id)
+    await markStatus('quoted')
+    const quoteUrl = `${window.location.origin}/quote/${id}`
+    const msg = encodeURIComponent(`Hi ${lead.name}, here's your quote from ${business.name}:\n\n${quoteUrl}\n\nLet me know if you have any questions!`)
+    const phone = lead.phone ? lead.phone.replace(/\D/g, '') : ''
+    window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank')
+  }
+
+  async function sendEmail() {
+    if (!lead.email && !emailInput) { setEmailModal(true); return }
+    doSendEmail(lead.email || emailInput)
+  }
+
+  async function doSendEmail(email) {
+    setEmailSending(true)
+    const id = await saveQuote()
+    await supabase.from('quotes').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', id)
+    if (emailInput && emailInput !== lead.email) {
+      await supabase.from('leads').update({ email: emailInput }).eq('id', lead.id)
+    }
+    await markStatus('quoted')
+    const quoteUrl = `${window.location.origin}/quote/${id}`
+    const subject = encodeURIComponent(`Your quote from ${business.name}`)
+    const body = encodeURIComponent(`Hi ${lead.name},\n\nPlease find your quote here:\n${quoteUrl}\n\nDon't hesitate to reach out if you have any questions.\n\n${business.name}`)
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
+    setEmailSending(false)
+    setEmailModal(false)
+  }
+
+  const fmt = (n) => formatCurrency(n, business?.currency)
+  const sym = business?.currency === 'USD' ? '$' : '€'
+
+  if (loading || dataLoading) return (
     <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
     </div>
@@ -186,79 +189,88 @@ export default function LeadPage({ params }) {
 
   return (
     <div className="min-h-screen bg-[#FAFAF9]">
-
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/')} className="text-gray-400 hover:text-gray-600 p-1 -ml-1">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <button onClick={() => router.push('/')} className="text-gray-400 p-1 -ml-1">
+            <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
               <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold font-heading text-gray-900">{lead.name}</h1>
-            <p className="text-xs text-gray-400">{lead.job_type || 'No job type'} · {lead.phone || 'No phone'}</p>
+            <h2 className="text-lg font-bold font-heading text-gray-900">{lead?.name}</h2>
+            <p className="text-xs text-gray-400">{lead?.job_type || 'No job type'} · {lead?.phone || '—'}</p>
           </div>
-          {/* Status pill */}
           <div className="flex gap-2">
-            {lead.status !== 'won' && (
-              <button onClick={() => markStatus('won')}
-                className="bg-green-50 text-green-600 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors">
-                ✓ Won
-              </button>
-            )}
-            {lead.status !== 'lost' && (
-              <button onClick={() => markStatus('lost')}
-                className="bg-gray-100 text-gray-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors">
-                ✕ Lost
-              </button>
-            )}
+            <button onClick={() => markStatus('won')}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                leadStatus==='won' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'
+              }`}>✓ Won</button>
+            <button onClick={() => markStatus('lost')}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                leadStatus==='lost' ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-gray-50 text-gray-400 border-gray-200'
+              }`}>✕ Lost</button>
           </div>
         </div>
-        {/* Status banner if won/lost */}
-        {['won', 'lost'].includes(lead.status) && (
-          <div className={`mt-3 rounded-xl px-3 py-2 text-sm font-medium ${
-            lead.status === 'won' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
-          }`}>
-            {lead.status === 'won' ? '🏆 Job won!' : '❌ Job lost'}
-            <button onClick={() => markStatus('quoted')} className="ml-2 underline text-xs opacity-60">Undo</button>
+        {leadStatus==='won' && (
+          <div className="mt-3 bg-green-50 rounded-xl px-3 py-2 flex items-center justify-between">
+            <span className="text-sm text-green-700 font-medium">🏆 Job won!</span>
+            <button onClick={() => router.push(`/invoice/${quoteId}`)}
+              className="bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+              📄 Convert to Invoice
+            </button>
+          </div>
+        )}
+        {lead?.viewed_at && (
+          <div className="mt-2 bg-blue-50 rounded-xl px-3 py-2 flex items-center gap-2">
+            <span className="text-sm">👁</span>
+            <p className="text-xs text-blue-700 font-medium">Customer opened the quote — good time to follow up!</p>
           </div>
         )}
       </div>
 
-      {/* Quote builder */}
+      {/* Content */}
       <div className="px-4 py-5 space-y-4 pb-40">
 
+        {/* Load saved rates */}
+        <button onClick={loadSavedRates} className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
+          ratesLoaded ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'
+        }`}>
+          <div className="flex items-center gap-3">
+            <span className="text-lg">{ratesLoaded ? '✓' : '⚡'}</span>
+            <div className="text-left">
+              <p className={`text-sm font-semibold ${ratesLoaded ? 'text-green-700' : 'text-amber-800'}`}>
+                {ratesLoaded ? 'Rates loaded!' : 'Load my saved rates'}
+              </p>
+              <p className={`text-xs ${ratesLoaded ? 'text-green-600' : 'text-amber-600'}`}>
+                {ratesLoaded ? 'Edit freely below' : 'Drop your standard items in instantly'}
+              </p>
+            </div>
+          </div>
+          {!ratesLoaded && <span className="text-xs text-amber-700 font-semibold">Tap to load</span>}
+        </button>
+
         {/* Sections */}
-        {sections.map((section, secIdx) => (
+        {sections.map(section => (
           <div key={section.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Section header */}
             <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-              <span className="font-semibold text-sm font-heading text-gray-700">
-                {section.tradeName}
-              </span>
+              <span className="font-semibold text-sm font-heading text-gray-700">{section.tradeName}</span>
               {sections.length > 1 && (
-                <button onClick={() => removeSection(section.id)}
-                  className="text-gray-300 hover:text-red-400 transition-colors text-xs">
-                  Remove
-                </button>
+                <button onClick={() => { setSections(p => p.filter(s => s.id !== section.id)); setSaved(false) }}
+                  className="text-gray-300 text-xs hover:text-red-400">Remove</button>
               )}
             </div>
-
-            {/* Items */}
             <div className="divide-y divide-gray-50">
               {section.items.map(item => (
                 <div key={item.id} className="px-4 py-3">
-                  <div className="flex items-start gap-2 mb-2">
-                    <input
-                      type="text" value={item.name}
-                      onChange={e => updateItem(section.id, item.id, 'name', e.target.value)}
+                  <div className="flex items-center gap-2 mb-2">
+                    <input value={item.name} onChange={e => updItem(section.id, item.id, 'name', e.target.value)}
                       placeholder="Item description"
                       className="flex-1 text-sm text-gray-900 bg-transparent focus:outline-none placeholder-gray-300"
                     />
                     <button onClick={() => removeItem(section.id, item.id)}
-                      className="text-gray-200 hover:text-red-400 transition-colors flex-shrink-0 pt-0.5">
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      className="text-gray-200 hover:text-red-400 transition-colors">
+                      <svg width="14" height="14" fill="none" viewBox="0 0 14 14">
                         <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                       </svg>
                     </button>
@@ -266,30 +278,20 @@ export default function LeadPage({ params }) {
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-1.5">
                       <span className="text-xs text-gray-400">Qty</span>
-                      <input type="number" value={item.qty}
-                        onChange={e => updateItem(section.id, item.id, 'qty', e.target.value)}
-                        className="w-12 text-sm text-gray-900 bg-transparent focus:outline-none text-center"
-                        min="0" step="0.5"
-                      />
+                      <input type="number" value={item.qty} onChange={e => updItem(section.id, item.id, 'qty', e.target.value)}
+                        className="w-12 text-sm text-gray-900 bg-transparent focus:outline-none text-center" min="0" step="0.5"/>
                     </div>
                     <span className="text-gray-200">×</span>
                     <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-1.5 flex-1">
-                      <span className="text-xs text-gray-400">{business?.currency === 'USD' ? '$' : '€'}</span>
-                      <input type="number" value={item.unit_price}
-                        onChange={e => updateItem(section.id, item.id, 'unit_price', e.target.value)}
-                        className="flex-1 text-sm text-gray-900 bg-transparent focus:outline-none"
-                        min="0" step="0.01" placeholder="0.00"
-                      />
+                      <span className="text-xs text-gray-400">{sym}</span>
+                      <input type="number" value={item.unit_price} onChange={e => updItem(section.id, item.id, 'unit_price', e.target.value)}
+                        className="flex-1 text-sm text-gray-900 bg-transparent focus:outline-none" min="0" step="0.01" placeholder="0.00"/>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 min-w-[60px] text-right">
-                      {formatCurrency(item.total, business?.currency)}
-                    </span>
+                    <span className="text-sm font-semibold text-gray-900 min-w-[60px] text-right">{fmt(item.total)}</span>
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Add item */}
             <button onClick={() => addItem(section.id)}
               className="w-full px-4 py-3 text-sm text-brand font-medium hover:bg-brand-light transition-colors text-left border-t border-gray-50">
               + Add line item
@@ -297,74 +299,142 @@ export default function LeadPage({ params }) {
           </div>
         ))}
 
-        {/* Add section */}
-        <button onClick={() => setShowAddSection(true)}
+        <button onClick={() => setAddSecOpen(true)}
           className="w-full bg-white border-2 border-dashed border-gray-200 rounded-2xl py-4 text-sm font-medium text-gray-400 hover:border-brand hover:text-brand transition-colors">
           + Add another trade section
         </button>
 
         {/* Notes */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <label className="block text-sm font-semibold font-heading text-gray-600 mb-2">Notes</label>
+          <p className="text-xs font-semibold font-heading text-gray-500 uppercase tracking-wide mb-2">Notes</p>
           <textarea value={notes} onChange={e => { setNotes(e.target.value); setSaved(false) }}
-            placeholder="Any extra information for the customer..."
-            rows={3}
-            className="w-full text-sm text-gray-700 placeholder-gray-300 focus:outline-none resize-none"
+            placeholder="Any extra info for the customer..."
+            rows={3} className="w-full text-sm text-gray-700 placeholder-gray-300 focus:outline-none resize-none bg-transparent"
           />
+        </div>
+
+        {/* Payment settings */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-semibold font-heading text-gray-500 uppercase tracking-wide mb-3">Payment Settings</p>
+          <div className="mb-4">
+            <p className="text-xs font-medium text-gray-600 mb-2">Deposit required upfront</p>
+            <div className="flex gap-2">
+              {[0, 25, 30, 50].map(pct => (
+                <button key={pct} onClick={() => { setDepositPct(pct); setSaved(false) }}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                    depositPct===pct ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 text-gray-400'
+                  }`}>
+                  {pct===0 ? 'None' : `${pct}%`}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-600 mb-2">Payment methods</p>
+            <div className="space-y-2">
+              {[
+                { key:'bank', label:'Bank Transfer', icon:'🏦', sub: business?.currency==='USD' ? 'ACH · No fee' : 'IBAN · No fee' },
+                { key:'card', label:`Card (Stripe) · ${business?.currency==='USD'?'2.9% + $0.30':'1.5% + €0.25'} paid by client`, icon:'💳', sub:'' },
+                { key:'cash', label:'Cash on the day', icon:'💵', sub:'' },
+              ].map(m => (
+                <button key={m.key} onClick={() => {
+                  setPayMethods(p => p.includes(m.key) ? p.filter(x=>x!==m.key) : [...p, m.key])
+                  setSaved(false)
+                }} className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                  payMethods.includes(m.key) ? 'border-brand bg-brand-light' : 'border-gray-200 bg-white'
+                }`}>
+                  <span className="text-lg">{m.icon}</span>
+                  <div className="flex-1">
+                    <p className={`text-sm font-semibold ${payMethods.includes(m.key) ? 'text-brand' : 'text-gray-700'}`}>{m.label}</p>
+                    {m.sub && <p className="text-xs text-gray-400">{m.sub}</p>}
+                  </div>
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${
+                    payMethods.includes(m.key) ? 'bg-brand border-brand' : 'border-gray-300'
+                  }`}>
+                    {payMethods.includes(m.key) && <span className="text-white text-xs font-bold">✓</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Totals */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Subtotal</span>
-            <span className="font-medium">{formatCurrency(subtotal, business?.currency)}</span>
+            <span className="font-medium">{fmt(subtotal)}</span>
           </div>
-          {business?.vat_registered && (
+          {taxRate > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">
-                {business?.country === 'PT' ? 'IVA' : 'Tax'} ({taxRate}%)
-              </span>
-              <span className="font-medium">{formatCurrency(taxAmount, business?.currency)}</span>
+              <span className="text-gray-500">{business?.country==='PT' ? 'IVA' : 'Tax'} ({taxRate}%)</span>
+              <span className="font-medium">{fmt(taxAmount)}</span>
+            </div>
+          )}
+          {hasCard && (
+            <div className="flex justify-between text-sm bg-blue-50 rounded-lg px-2 py-1.5">
+              <span className="text-blue-600">💳 Card fee (paid by client)</span>
+              <span className="font-medium text-blue-600">{fmt(stripeFee)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-100 font-heading">
             <span>Total</span>
-            <span className="text-brand">{formatCurrency(total, business?.currency)}</span>
+            <span className="text-brand">{fmt(grandTotal)}</span>
+          </div>
+          {depositPct > 0 && (
+            <>
+              <div className="flex justify-between text-sm bg-amber-50 rounded-lg px-2 py-1.5">
+                <span className="text-amber-700 font-semibold">Deposit ({depositPct}%)</span>
+                <span className="font-bold text-amber-700">{fmt(grandTotal * depositPct / 100)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-400 px-2">
+                <span>Remaining on completion</span>
+                <span>{fmt(grandTotal * (1 - depositPct/100))}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Legal disclaimer */}
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Important Notice</p>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            This quotation is based on information available at the time of assessment. Final costs may vary due to unforeseen site conditions, material price changes, or variations in scope requested by the client. Any changes will be communicated and approved in writing before proceeding.
+          </p>
+        </div>
+      </div>
+
+      {/* Action bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 pb-8 z-10">
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <button onClick={saveQuote} disabled={saving}
+              className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50 disabled:opacity-50">
+              {saving ? '...' : saved ? '✓ Saved' : 'Save'}
+            </button>
+            <button onClick={() => { saveQuote().then(id => { if(id) window.open(`/quote/${id}`, '_blank') }) }}
+              className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50">
+              Preview
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={sendWhatsApp} disabled={grandTotal===0}
+              className="flex-1 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ background: '#25D366' }}>
+              📱 WhatsApp
+            </button>
+            <button onClick={sendEmail} disabled={emailSending || grandTotal===0}
+              className="flex-1 bg-blue-600 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
+              {emailSending ? '...' : '✉️ Email'}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 pb-safe z-10">
-        <div className="flex gap-2">
-          <button onClick={saveQuote} disabled={saving}
-            className="flex-shrink-0 border border-gray-200 text-gray-600 font-semibold text-sm px-4 py-3 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors">
-            {saving ? '...' : saved ? '✓ Saved' : 'Save'}
-          </button>
-          <button
-            onClick={() => { saveQuote().then(id => { if(id) window.open(`/quote/${id}`, '_blank') }) }}
-            className="flex-shrink-0 border border-gray-200 text-gray-600 font-semibold text-sm px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors">
-            Preview
-          </button>
-          <button onClick={sendViaWhatsApp} disabled={sending || total === 0}
-            className="flex-1 brand-gradient text-white font-semibold text-sm py-3 rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2">
-            {sending ? 'Opening...' : (
-              <>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 1C4.134 1 1 4.134 1 8C1 9.323 1.363 10.562 2 11.611L1 15L4.5 14.05C5.52 14.655 6.717 15 8 15C11.866 15 15 11.866 15 8C15 4.134 11.866 1 8 1Z" fill="white"/>
-                  <path d="M6 5.5C6 5.5 5.5 6 5.5 7C5.5 8 6.5 9.5 7.5 10.5C8.5 11.5 10 12 10 12L10.5 11.5C10.5 11.5 11 11 10.5 10.5L9.5 9.5C9 9 8.5 9.5 8.5 9.5C8.5 9.5 7.5 8.5 6.5 7.5C6.5 7.5 7 7 6.5 6.5L6 5.5Z" fill="#25D366"/>
-                </svg>
-                Send via WhatsApp
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
       {/* Add section modal */}
-      {showAddSection && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => setShowAddSection(false)}>
-          <div className="bg-white w-full rounded-t-3xl p-6 pb-safe max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      {addSecOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => setAddSecOpen(false)}>
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10 max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
             <h3 className="text-lg font-bold font-heading mb-4">Add trade section</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -374,6 +444,39 @@ export default function LeadPage({ params }) {
                   <span className="text-sm font-medium text-gray-800">{t.name}</span>
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email modal */}
+      {emailModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end" onClick={() => setEmailModal(false)}>
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-lg">✉️</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold font-heading text-gray-900">No email on file</h3>
+                <p className="text-sm text-gray-400">Add {lead?.name?.split(' ')[0]}{"'s"} email to send the quote.</p>
+              </div>
+            </div>
+            <input type="email" value={emailInput} onChange={e => setEmailInput(e.target.value)}
+              placeholder="client@example.com" autoFocus
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand mb-3"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setEmailModal(false)}
+                className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-3 rounded-xl">
+                Cancel
+              </button>
+              <button onClick={() => { if(emailInput) doSendEmail(emailInput) }}
+                disabled={!emailInput || emailSending}
+                className="flex-2 flex-grow bg-blue-600 text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-50">
+                {emailSending ? 'Sending...' : 'Save & send ✉️'}
+              </button>
             </div>
           </div>
         </div>
