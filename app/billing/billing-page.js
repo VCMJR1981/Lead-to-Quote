@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -12,7 +12,7 @@ const STATUS_LABELS = {
   incomplete: { label: 'Incomplete',  bg: '#FFFBEB', c: '#B45309' },
 }
 
-export default function BillingPage() {
+function BillingContent() {
   const [business, setBusiness] = useState(null)
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -267,6 +267,18 @@ export default function BillingPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <BillingContent />
+    </Suspense>
   )
 }
 
