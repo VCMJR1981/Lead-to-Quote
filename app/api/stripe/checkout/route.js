@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { stripe, PRICE_IDS } from '@/lib/stripe'
+import { getStripe, PRICE_IDS } from '@/lib/stripe'
 
 export async function POST(request) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request) {
     let customerId = business.stripe_customer_id
 
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: user.email,
         name: business.name,
         metadata: { business_id: business.id, user_id: user.id },
@@ -47,7 +47,7 @@ export async function POST(request) {
     }
 
     // Create checkout session with 14-day trial
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -68,5 +68,5 @@ export async function POST(request) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
--e 
+
 export const dynamic = 'force-dynamic'

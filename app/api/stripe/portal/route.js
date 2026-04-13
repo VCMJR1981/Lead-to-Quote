@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export async function POST() {
   try {
@@ -25,7 +25,7 @@ export async function POST() {
       return NextResponse.json({ error: 'No billing account found' }, { status: 404 })
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await getStripe().billingPortal.sessions.create({
       customer: business.stripe_customer_id,
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
     })
@@ -36,5 +36,5 @@ export async function POST() {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
--e 
+
 export const dynamic = 'force-dynamic'

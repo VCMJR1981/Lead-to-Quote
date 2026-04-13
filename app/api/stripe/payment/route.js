@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export async function POST(request) {
   const supabaseAdmin = createClient(
@@ -44,7 +44,7 @@ export async function POST(request) {
     // Builder receives base amount (fee is added on top)
     const applicationFeeAmount = Math.round(stripeFee * 100)
 
-    const session = await stripe.checkout.sessions.create(
+    const session = await getStripe().checkout.sessions.create(
       {
         payment_method_types: ['card'],
         mode: 'payment',
@@ -98,5 +98,5 @@ export async function POST(request) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
--e 
+
 export const dynamic = 'force-dynamic'

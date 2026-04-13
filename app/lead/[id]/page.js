@@ -381,5 +381,5 @@ export default function LeadPage({ params }) {
     </div>
   )
 }
--e 
+
 export const dynamic = 'force-dynamic'

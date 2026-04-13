@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export async function GET(request) {
   const supabaseAdmin = createClient(
@@ -26,7 +26,7 @@ export async function GET(request) {
 
   try {
     // Exchange code for connected account ID
-    const response = await stripe.oauth.token({
+    const response = await getStripe().oauth.token({
       grant_type: 'authorization_code',
       code,
     })
@@ -45,5 +45,5 @@ export async function GET(request) {
     return NextResponse.redirect(`${appUrl}/billing?connect_error=1`)
   }
 }
--e 
+
 export const dynamic = 'force-dynamic'

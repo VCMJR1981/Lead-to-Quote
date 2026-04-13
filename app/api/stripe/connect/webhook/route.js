@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export async function POST(request) {
   const supabaseAdmin = createClient(
@@ -14,7 +14,7 @@ export async function POST(request) {
   let event
   try {
     // Connect webhooks use a separate webhook secret
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body, sig, process.env.STRIPE_CONNECT_WEBHOOK_SECRET
     )
   } catch (err) {
@@ -72,5 +72,5 @@ export async function POST(request) {
 
   return NextResponse.json({ received: true })
 }
--e 
+
 export const dynamic = 'force-dynamic'
