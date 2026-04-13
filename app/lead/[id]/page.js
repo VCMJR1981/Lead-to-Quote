@@ -33,8 +33,6 @@ export default function LeadPage({ params }) {
   const [photoUrl, setPhotoUrl] = useState(null)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [repeatClient, setRepeatClient] = useState(null)
-  const [photoUrl, setPhotoUrl] = useState(null)
-  const [photoUploading, setPhotoUploading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
