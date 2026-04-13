@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Quotify — Quote faster. Win more jobs.',
+  title: 'Lead-to-Quote — Quote faster. Win more jobs.',
   description: 'Turn leads into quotes in minutes.',
 }
 

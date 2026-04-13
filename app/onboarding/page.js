@@ -287,7 +287,7 @@ export default function OnboardingPage() {
             disabled={!canProceed || loading}
             className="flex-1 brand-gradient text-white rounded-xl py-3.5 font-semibold text-sm disabled:opacity-50 hover:opacity-90 transition-opacity"
           >
-            {loading ? 'Setting up...' : step === STEPS.length - 1 ? 'Start using Quotify →' : 'Continue →'}
+            {loading ? 'Setting up...' : step === STEPS.length - 1 ? 'Start using Lead-to-Quote →' : 'Continue →'}
           </button>
         </div>
       </div>

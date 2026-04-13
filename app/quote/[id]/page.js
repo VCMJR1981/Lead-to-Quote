@@ -194,7 +194,7 @@ export default function QuotePage({ params }) {
 
         {/* Powered by */}
         <p className="text-center text-xs text-gray-200 pb-6">
-          Powered by <a href="/" className="hover:underline">Quotify</a>
+          Powered by <a href="/" className="hover:underline">Lead-to-Quote</a>
         </p>
       </div>
 

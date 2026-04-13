@@ -5,6 +5,7 @@ const PUBLIC = [
   '/form',
   '/quote',
   '/login',
+  '/auth/callback',
   '/api/stripe/webhook',
   '/api/stripe/connect/webhook',
   '/api/stripe/connect/callback',

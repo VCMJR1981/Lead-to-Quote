@@ -41,7 +41,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 brand-gradient rounded-2xl mb-4 shadow-lg shadow-orange-200">
             <span className="text-white text-3xl font-bold font-heading">Q</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 font-heading">Quotify</h1>
+          <h1 className="text-2xl font-bold text-gray-900 font-heading">Lead-to-Quote</h1>
           <p className="text-gray-400 text-sm mt-1">Quote faster. Win more jobs.</p>
         </div>
 
