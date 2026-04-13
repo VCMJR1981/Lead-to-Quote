@@ -169,15 +169,33 @@ export default function QuotePage({ params }) {
         {/* Totals */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Subtotal</span>
+            <span className="text-gray-600">Subtotal</span>
             <span>{fmt(quote?.subtotal || 0)}</span>
           </div>
           {quote?.tax_rate > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">
+              <span className="text-gray-600">
                 {business?.country === 'PT' ? 'IVA' : 'Tax'} ({quote.tax_rate}%)
               </span>
               <span>{fmt(quote?.tax_amount || 0)}</span>
+            </div>
+          )}
+          {paymentMethods.includes('card') && quote?.stripe_fee > 0 && (
+            <div className="flex justify-between text-sm bg-blue-50 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600 font-medium">💳 Card fee</span>
+                <button onClick={() => setShowStripeInfo(p => !p)}
+                  className="w-4 h-4 rounded-full bg-blue-200 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                  ?
+                </button>
+              </div>
+              <span className="font-medium text-blue-600">{fmt(quote.stripe_fee)}</span>
+            </div>
+          )}
+          {showStripeInfo && (
+            <div className="bg-blue-50 rounded-xl p-3 text-xs text-gray-600 leading-relaxed border border-blue-100">
+              <p className="font-semibold text-gray-800 mb-1">About this fee</p>
+              Stripe is a secure payment processor used by millions of businesses. A small fee ({stripeLabel}) is added when paying by card to cover their service. Paying by bank transfer has no fee.
             </div>
           )}
           <div className="flex justify-between font-bold text-xl pt-2 border-t border-gray-100 font-heading">
@@ -249,26 +267,16 @@ export default function QuotePage({ params }) {
                   <span className="text-xl">💳</span>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-blue-900">Pay by Card</p>
-                    <p className="text-xs text-blue-500">Processed securely by Stripe</p>
+                    <p className="text-xs text-blue-600">Processed securely by Stripe</p>
                   </div>
-                  <button onClick={() => setShowStripeInfo(p => !p)}
-                    className="w-5 h-5 rounded-full bg-blue-200 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                    ?
-                  </button>
                 </div>
-                {showStripeInfo && (
-                  <div className="bg-white rounded-lg p-3 mb-3 border border-blue-100 text-xs text-gray-500 leading-relaxed">
-                    <p className="font-semibold text-gray-700 mb-1">About this fee</p>
-                    Stripe is a secure payment processor used by millions of businesses worldwide. A small processing fee ({stripeLabel}) is added to card payments to cover their service. This is charged to you, not {business?.name}. There is no fee for bank transfers.
-                  </div>
-                )}
                 <div className="bg-white rounded-lg p-3 border border-blue-100">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <div className="flex justify-between text-xs text-gray-600 mb-1">
                     <span>Deposit amount</span>
                     <span>{fmt(depositPct > 0 ? depositAmt : (quote?.total || 0))}</span>
                   </div>
                   <div className="flex justify-between text-xs text-blue-600 mb-2">
-                    <span>Stripe fee ({stripeLabel})</span>
+                    <span>Card fee ({stripeLabel})</span>
                     <span>+{fmt(depositAmt * stripeRate + stripeFixed)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-bold border-t border-gray-100 pt-2">
