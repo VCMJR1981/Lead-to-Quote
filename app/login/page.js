@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 export default function LoginPage() {
@@ -11,8 +10,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const router = useRouter()
-  const supabase = createClient()
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -20,14 +17,35 @@ export default function LoginPage() {
     setError('')
     setSuccess('')
 
+    const supabase = createClient()
+
     if (mode === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) { setError(error.message); setLoading(false); return }
-      window.location.href = '/'
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+      if (data?.session) {
+        window.location.replace('/')
+      } else {
+        setError('Sign in failed. Please try again.')
+        setLoading(false)
+      }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
-      if (error) { setError(error.message); setLoading(false); return }
-      setSuccess('Account created! Check your email to confirm, then come back to sign in.')
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+      setSuccess('Account created! Check your email to confirm, then sign in.')
       setLoading(false)
     }
   }
@@ -39,7 +57,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 brand-gradient rounded-2xl mb-4 shadow-lg shadow-orange-200">
-            <span className="text-white text-3xl font-bold font-heading">Q</span>
+            <span className="text-white text-xl font-bold font-heading">L2Q</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 font-heading">Lead-to-Quote</h1>
           <p className="text-gray-400 text-sm mt-1">Quote faster. Win more jobs.</p>
@@ -84,13 +102,14 @@ export default function LoginPage() {
               type="submit" disabled={loading}
               className="w-full brand-gradient text-white rounded-xl py-3.5 font-semibold text-sm disabled:opacity-60 hover:opacity-90 transition-opacity shadow-sm"
             >
-              {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
+              {loading ? 'Signing in...' : mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-400 mt-5">
             {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setSuccess('') }}
+            <button
+              onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setSuccess('') }}
               className="text-brand font-semibold hover:underline">
               {mode === 'login' ? 'Sign up free' : 'Sign in'}
             </button>
