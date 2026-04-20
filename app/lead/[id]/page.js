@@ -36,6 +36,7 @@ export default function LeadPage({ params }) {
   const router = useRouter()
   const supabase = createClient()
   const FREE_LIMIT = 5
+  const quoteIdRef = useRef(null)
 
   useEffect(() => { if (user) fetchData() }, [user])
 
@@ -69,6 +70,7 @@ export default function LeadPage({ params }) {
     const { data: qt } = await supabase.from('quotes').select('*').eq('lead_id', params.id).maybeSingle()
     if (qt) {
       setQuote(qt)
+      quoteIdRef.current = qt.id
       setSections(qt.sections || [])
       setNotes(qt.notes || '')
       setDepositPct(qt.deposit_pct ?? biz.deposit_pct ?? 30)
@@ -118,7 +120,7 @@ export default function LeadPage({ params }) {
       photo_url: isPremium ? (photoUrl || null) : null,
       status: 'draft',
     }
-    let id = quote?.id
+    let id = quoteIdRef.current || quote?.id
     if (id) {
       await supabase.from('quotes').update(payload).eq('id', id)
     } else {
@@ -126,11 +128,27 @@ export default function LeadPage({ params }) {
       const num = String((count || 0) + 1).padStart(4, '0')
       const { data } = await supabase.from('quotes').insert({ ...payload, quote_number: `Q-${num}` }).select().single()
       id = data?.id
+      quoteIdRef.current = id
       setQuote(data)
     }
     setSaving(false)
     setSaved(true)
     return id
+  }
+
+  async function goPreview() {
+    const id = await saveQuote()
+    if (id) router.push(`/quote/${id}`)
+  }
+
+  async function goPDF() {
+    const id = await saveQuote()
+    if (id) router.push(`/quote/${id}/print`)
+  }
+
+  async function goInvoice() {
+    const id = await saveQuote()
+    if (id) router.push(`/invoice/${id}`)
   }
 
   async function markStatus(status) {
