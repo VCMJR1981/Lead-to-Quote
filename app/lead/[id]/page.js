@@ -33,6 +33,9 @@ export default function LeadPage({ params }) {
   const [photoUrl, setPhotoUrl] = useState(null)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [repeatClient, setRepeatClient] = useState(null)
+  const [quotesThisMonth, setQuotesThisMonth] = useState(0)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const FREE_LIMIT = 5
   const router = useRouter()
   const supabase = createClient()
 
@@ -89,6 +92,22 @@ export default function LeadPage({ params }) {
       const trade = getTrade(tradeKey)
       setSections([{ id: genId(), tradeKey, tradeName: trade?.name || 'General', items: getDefaultItems(tradeKey) }])
     }
+
+    // Count quotes sent this month (for freemium limit)
+    const isPremium = ['active'].includes(biz.subscription_status)
+    if (!isPremium) {
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
+      const { count } = await supabase
+        .from('quotes')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', biz.id)
+        .eq('status', 'sent')
+        .gte('sent_at', startOfMonth.toISOString())
+      setQuotesThisMonth(count || 0)
+    }
+
     setDataLoading(false)
   }
 
@@ -266,6 +285,8 @@ export default function LeadPage({ params }) {
   }
 
   async function sendWhatsApp() {
+    const isPremium = ['active'].includes(business?.subscription_status)
+    if (!isPremium && quotesThisMonth >= FREE_LIMIT) { setShowUpgradeModal(true); return }
     const id = await saveQuote()
     await supabase.from('quotes').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', id)
     await markStatus('quoted')
@@ -276,6 +297,8 @@ export default function LeadPage({ params }) {
   }
 
   async function sendSMS() {
+    const isPremium = ['active'].includes(business?.subscription_status)
+    if (!isPremium && quotesThisMonth >= FREE_LIMIT) { setShowUpgradeModal(true); return }
     if (!lead.phone && !smsPhone) {
       setSmsPhone(lead.phone || '')
       setSmsModal(true)
@@ -301,6 +324,8 @@ export default function LeadPage({ params }) {
   }
 
   async function sendEmail() {
+    const isPremium = ['active'].includes(business?.subscription_status)
+    if (!isPremium && quotesThisMonth >= FREE_LIMIT) { setShowUpgradeModal(true); return }
     if (!lead.email && !emailInput) { setEmailModal(true); return }
     doSendEmail(lead.email || emailInput)
   }
@@ -379,7 +404,78 @@ export default function LeadPage({ params }) {
         )}
       </div>
 
-      {/* Content */}
+      {/* Free quota banner */}
+      {!['active'].includes(business?.subscription_status) && (
+        <div className={`mx-4 mt-3 rounded-2xl px-4 py-3 flex items-center justify-between ${
+          quotesThisMonth >= FREE_LIMIT
+            ? 'bg-red-50 border border-red-200'
+            : quotesThisMonth >= FREE_LIMIT - 1
+            ? 'bg-amber-50 border border-amber-200'
+            : 'bg-gray-50 border border-gray-100'
+        }`}>
+          <div>
+            <p className={`text-xs font-semibold ${
+              quotesThisMonth >= FREE_LIMIT ? 'text-red-700' : 'text-gray-700'
+            }`}>
+              {quotesThisMonth >= FREE_LIMIT
+                ? '🔒 Free limit reached'
+                : `${FREE_LIMIT - quotesThisMonth} free quote${FREE_LIMIT - quotesThisMonth === 1 ? '' : 's'} left this month`}
+            </p>
+            <p className={`text-xs mt-0.5 ${
+              quotesThisMonth >= FREE_LIMIT ? 'text-red-600' : 'text-gray-500'
+            }`}>
+              {quotesThisMonth >= FREE_LIMIT
+                ? 'Upgrade to send unlimited quotes'
+                : `${quotesThisMonth} of ${FREE_LIMIT} sent`}
+            </p>
+          </div>
+          <button onClick={() => router.push('/billing')}
+            className="text-xs font-bold text-white brand-gradient px-3 py-1.5 rounded-xl flex-shrink-0">
+            Upgrade
+          </button>
+        </div>
+      )}
+
+      {/* Upgrade modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10">
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
+            <div className="text-center mb-6">
+              <p className="text-4xl mb-3">🚀</p>
+              <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">
+                You've used all 5 free quotes
+              </h3>
+              <p className="text-sm text-gray-600">
+                Upgrade to send unlimited quotes, download PDFs, and access all features.
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-2xl p-4 mb-5">
+              {[
+                'Unlimited quotes per month',
+                'PDF download',
+                'Revenue summary',
+                'Job site photos',
+                'Client history',
+                'Saved rates',
+              ].map(f => (
+                <div key={f} className="flex items-center gap-2 py-1.5">
+                  <span className="text-green-500 font-bold text-sm">✓</span>
+                  <span className="text-sm text-gray-700">{f}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => router.push('/billing')}
+              className="w-full py-4 rounded-2xl text-white font-bold text-base brand-gradient mb-3">
+              Upgrade — {business?.currency === 'EUR' ? '€24' : '$29'}/month
+            </button>
+            <button onClick={() => setShowUpgradeModal(false)}
+              className="w-full py-3 rounded-2xl text-gray-500 font-semibold text-sm border border-gray-200">
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
       <div className="px-4 py-5 space-y-4 pb-40">
 
         {/* Repeat client banner */}

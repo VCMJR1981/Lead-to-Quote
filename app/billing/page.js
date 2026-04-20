@@ -72,7 +72,9 @@ function BillingContent() {
       redirect_uri: `${window.location.origin}/api/stripe/connect/callback`,
       state: business.id,
     })
-    window.location.href = `https://connect.stripe.com/oauth/authorize?${params.toString()}`
+    // Open in new tab so auth listener on current page doesn't fire
+    window.open(`https://connect.stripe.com/oauth/authorize?${params.toString()}`, '_blank')
+    setConnectLoading(false)
   }
 
   const price = business?.currency === 'EUR' ? '€24' : '$29'
@@ -83,15 +85,23 @@ function BillingContent() {
     ? new Date(business.trial_ends_at).toLocaleDateString()
     : null
 
-  const features = [
+  const freeFeatures = [
+    '5 quotes per month',
+    'Quote builder',
+    'WhatsApp, SMS & Email send',
+    'Client quote page',
+    'Deposit & payment methods',
+  ]
+
+  const premiumFeatures = [
     'Unlimited quotes',
-    'WhatsApp & Email send',
-    'Deposit & card payments',
-    'Invoice conversion',
-    'Quote opened tracking',
+    'PDF download',
+    'Revenue summary',
+    'Job site photos',
+    'Client history',
+    'Saved rates',
+    'Repeat client detection',
     'Public intake form',
-    'My saved rates',
-    'Settings & profile',
   ]
 
   if (loading) return (
@@ -132,10 +142,10 @@ function BillingContent() {
           </div>
         )}
 
-        {/* ── SECTION 1: Your subscription ── */}
+        {/* ── SECTION 1: Your plan ── */}
         <div>
           <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
-            Your subscription
+            Your plan
           </p>
 
           {/* Status card */}
@@ -144,19 +154,18 @@ function BillingContent() {
               <div>
                 <span className="text-xs font-semibold px-2 py-1 rounded-full"
                   style={{ background: statusInfo.bg, color: statusInfo.c }}>
-                  {statusInfo.label}
+                  {status === 'active' ? 'Premium' : 'Free'}
                 </span>
                 <p className="font-bold font-heading text-gray-900 text-lg mt-2">
-                  Lead-to-Quote · {price}/mo
+                  {status === 'active' ? `Lead-to-Quote Premium · ${price}/mo` : 'Lead-to-Quote Free'}
                 </p>
-                {status === 'trialing' && trialEnd && (
+                {status !== 'active' && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Trial ends {trialEnd}. No charge until then.
+                    5 quotes per month · Upgrade for unlimited
                   </p>
                 )}
                 {status === 'active' && business?.current_period_end && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Next billing: {new Date(business.current_period_end).toLocaleDateString()}
+                  <p className="text-sm text-gray-600 mt-1">                    Next billing: {new Date(business.current_period_end).toLocaleDateString()}
                   </p>
                 )}
                 {status === 'past_due' && (
@@ -178,26 +187,46 @@ function BillingContent() {
 
           {/* What's included */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-3">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
-              Everything included
-            </p>
-            <div className="grid grid-cols-2 gap-y-2">
-              {features.map(f => (
-                <div key={f} className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-md bg-brand-light flex items-center justify-center flex-shrink-0">
-                    <span className="text-brand text-xs font-bold">✓</span>
-                  </div>
-                  <span className="text-xs text-gray-600">{f}</span>
+            {status !== 'active' ? (
+              <>
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Free includes</p>
+                  {freeFeatures.map(f => (
+                    <div key={f} className="flex items-center gap-2 py-1">
+                      <span className="text-gray-400 text-xs">✓</span>
+                      <span className="text-xs text-gray-600">{f}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-xs font-semibold text-brand uppercase tracking-wider mb-2">Premium unlocks</p>
+                  {premiumFeatures.map(f => (
+                    <div key={f} className="flex items-center gap-2 py-1">
+                      <span className="text-brand text-xs font-bold">✓</span>
+                      <span className="text-xs text-gray-700 font-medium">{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-y-2">
+                {[...freeFeatures, ...premiumFeatures].map(f => (
+                  <div key={f} className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-md bg-brand-light flex items-center justify-center flex-shrink-0">
+                      <span className="text-brand text-xs font-bold">✓</span>
+                    </div>
+                    <span className="text-xs text-gray-600">{f}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
-          {!business?.stripe_subscription_id ? (
+          {status !== 'active' ? (
             <button onClick={startCheckout} disabled={checkoutLoading}
               className="w-full brand-gradient text-white rounded-xl py-3.5 font-semibold text-sm disabled:opacity-60 hover:opacity-90 transition-opacity">
-              {checkoutLoading ? 'Redirecting...' : `Start free trial → ${price}/mo after`}
+              {checkoutLoading ? 'Redirecting...' : `Upgrade to Premium — ${price}/mo`}
             </button>
           ) : (
             <button onClick={openPortal} disabled={portalLoading}
