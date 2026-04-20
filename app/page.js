@@ -113,35 +113,27 @@ export default function Dashboard() {
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-14 pb-4 sticky top-0 z-10">
 
-        {/* Trial countdown */}
-        {business?.subscription_status === 'trialing' && business?.trial_ends_at && (() => {
-          const daysLeft = Math.max(0, Math.ceil((new Date(business.trial_ends_at) - new Date()) / 86400000))
-          const pct = Math.round((daysLeft / 14) * 100)
-          return (
-            <Link href="/billing" className="block mb-3">
-              <div className={`rounded-xl px-3 py-2.5 flex items-center justify-between ${
-                daysLeft <= 3 ? 'bg-red-50 border border-red-100' : 'bg-blue-50 border border-blue-100'
-              }`}>
-                <div>
-                  <p className={`text-xs font-semibold ${daysLeft <= 3 ? 'text-red-700' : 'text-blue-700'}`}>
-                    {daysLeft === 0 ? '⚠️ Trial expires today' :
-                     daysLeft === 1 ? '⚠️ 1 day left in trial' :
-                     `⏱ ${daysLeft} days left in free trial`}
-                  </p>
-                  <div className="mt-1 h-1 rounded-full bg-gray-200 w-32">
-                    <div className={`h-1 rounded-full transition-all ${daysLeft <= 3 ? 'bg-red-500' : 'bg-blue-500'}`}
-                      style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${
-                  daysLeft <= 3 ? 'bg-red-500 text-white' : 'bg-blue-600 text-white'
-                }`}>
-                  Upgrade →
-                </span>
-              </div>
-            </Link>
-          )
+        {/* Free quota banner */}
+        {business?.subscription_status !== 'active' && (() => {
+          const now = new Date()
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+          return null // quota count loaded async — shown on lead page instead
         })()}
+
+        {/* Upgrade nudge for free users */}
+        {business?.subscription_status !== 'active' && (
+          <Link href="/billing" className="block mb-3">
+            <div className="bg-brand-light border border-brand/20 rounded-xl px-3 py-2.5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-brand">Free plan · 5 quotes/month</p>
+                <p className="text-xs text-brand/70 mt-0.5">Upgrade for unlimited quotes & all features</p>
+              </div>
+              <span className="text-xs font-semibold px-2 py-1 rounded-lg brand-gradient text-white flex-shrink-0">
+                Upgrade →
+              </span>
+            </div>
+          </Link>
+        )}
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex-1 min-w-0">

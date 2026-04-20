@@ -60,7 +60,25 @@ export default function ClientsPage() {
     lost:   { bg: '#F4F4F5', c: '#A1A1AA', dot: '#D4D4D8' },
   }
 
-  const filtered = leads.filter(l =>
+  // Group leads by phone or email to detect repeat clients
+  // Show most recent lead per client, with previous jobs count
+  const clientMap = {}
+  leads.forEach(lead => {
+    const key = lead.phone || lead.email || lead.id
+    if (!clientMap[key]) {
+      clientMap[key] = { latest: lead, allJobs: [lead] }
+    } else {
+      clientMap[key].allJobs.push(lead)
+      // Keep most recent as the "latest"
+      if (new Date(lead.created_at) > new Date(clientMap[key].latest.created_at)) {
+        clientMap[key].latest = lead
+      }
+    }
+  })
+  const clients = Object.values(clientMap)
+    .sort((a, b) => new Date(b.latest.created_at) - new Date(a.latest.created_at))
+
+  const filtered = clients.filter(({ latest: l }) =>
     l.name?.toLowerCase().includes(search.toLowerCase()) ||
     l.phone?.includes(search) ||
     l.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -88,8 +106,8 @@ export default function ClientsPage() {
             </svg>
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold font-heading text-gray-900">Client List</h1>
-            <p className="text-xs text-gray-600">{leads.length} clients · {fmt(totalWon)} won</p>
+            <h1 className="text-lg font-bold font-heading text-gray-900">Clients</h1>
+            <p className="text-xs text-gray-600">{clients.length} clients · {fmt(totalWon)} won</p>
           </div>
         </div>
         {/* Search */}
@@ -113,10 +131,13 @@ export default function ClientsPage() {
               {search ? 'No clients match your search' : 'No clients yet'}
             </p>
           </div>
-        ) : filtered.map((lead, idx) => {
+        ) : filtered.map(({ latest: lead, allJobs }, idx) => {
           const quote = lead.quotes?.[0]
           const st = STATUS_COLOR[lead.status] || STATUS_COLOR.new
-          const clientNum = String(leads.length - leads.findIndex(l => l.id === lead.id)).padStart(3, '0')
+          const clientNum = String(clients.length - idx).padStart(3, '0')
+          const wonJobs = allJobs.filter(j => j.status === 'won')
+          const totalSpent = wonJobs.reduce((s, j) => s + (j.quotes?.[0]?.total || 0), 0)
+          const previousJobs = allJobs.length - 1
 
           return (
             <Link key={lead.id} href={`/lead/${lead.id}`}>
@@ -140,6 +161,11 @@ export default function ClientsPage() {
                         <span className="w-1.5 h-1.5 rounded-full" style={{ background: st.dot }} />
                         {lead.status === 'new' ? 'New' : lead.status === 'quoted' ? 'Quoted' : lead.status === 'won' ? 'Won' : 'Lost'}
                       </span>
+                      {previousJobs > 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
+                          🔁 {previousJobs} previous job{previousJobs > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
@@ -161,13 +187,18 @@ export default function ClientsPage() {
 
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-gray-500">{timeAgo(lead.created_at)}</span>
-                      {quote?.total > 0 && (
-                        <span className={`text-sm font-bold font-heading ${
-                          lead.status === 'won' ? 'text-green-600' : 'text-gray-900'
-                        }`}>
-                          {fmt(quote.total)}
-                        </span>
-                      )}
+                      <div className="text-right">
+                        {totalSpent > 0 && (
+                          <p className="text-sm font-bold font-heading text-green-600">
+                            {fmt(totalSpent)} total
+                          </p>
+                        )}
+                        {quote?.total > 0 && lead.status !== 'won' && (
+                          <p className="text-sm font-bold font-heading text-gray-900">
+                            {fmt(quote.total)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 

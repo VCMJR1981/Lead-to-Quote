@@ -574,7 +574,8 @@ export default function LeadPage({ params }) {
           />
         </div>
 
-        {/* Payment settings — from profile, overridable per quote */}
+        {/* Payment settings — premium only */}
+        {['active'].includes(business?.subscription_status) ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold font-heading text-gray-500 uppercase tracking-wide">Payment Settings</p>
@@ -631,6 +632,19 @@ export default function LeadPage({ params }) {
             </div>
           </div>
         </div>
+        ) : (
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex items-center gap-3">
+            <span className="text-2xl">🔒</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-700">Deposits & payments</p>
+              <p className="text-xs text-gray-600 mt-0.5">Upgrade to Premium to set deposits and accept card payments</p>
+            </div>
+            <button onClick={() => router.push('/billing')}
+              className="text-xs font-bold text-white brand-gradient px-3 py-1.5 rounded-xl flex-shrink-0">
+              Upgrade
+            </button>
+          </div>
+        )}
 
         {/* Totals */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2">
