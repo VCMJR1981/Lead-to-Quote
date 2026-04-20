@@ -90,11 +90,12 @@ function BillingContent() {
     'Quote builder',
     'WhatsApp, SMS & Email send',
     'Client quote page',
-    'Deposit & payment methods',
   ]
 
   const premiumFeatures = [
     'Unlimited quotes',
+    'Deposits & payment methods',
+    'Branded quotation page',
     'PDF download',
     'Revenue summary',
     'Job site photos',

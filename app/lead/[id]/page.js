@@ -383,7 +383,7 @@ export default function LeadPage({ params }) {
               }`}>✓ Won</button>
             <button onClick={() => markStatus('lost')}
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                leadStatus==='lost' ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-gray-50 text-gray-600 border-gray-200'
+                leadStatus==='lost' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-600 border-gray-200'
               }`}>✕ Lost</button>
           </div>
         </div>

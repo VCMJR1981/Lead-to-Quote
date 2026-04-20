@@ -22,8 +22,7 @@ export default function ClientsPage() {
   const [business, setBusiness] = useState(null)
   const [search, setSearch] = useState('')
   const [dataLoading, setDataLoading] = useState(true)
-  const router = useRouter()
-  const supabase = createClient()
+  const [expandedClient, setExpandedClient] = useState(null)
 
   useEffect(() => { if (user) fetchData() }, [user])
 
@@ -57,7 +56,7 @@ export default function ClientsPage() {
     new:    { bg: '#EFF6FF', c: '#2563EB', dot: '#3B82F6' },
     quoted: { bg: '#FFFBEB', c: '#B45309', dot: '#F59E0B' },
     won:    { bg: '#F0FDF4', c: '#15803D', dot: '#22C55E' },
-    lost:   { bg: '#F4F4F5', c: '#A1A1AA', dot: '#D4D4D8' },
+    lost:   { bg: '#FEF2F2', c: '#DC2626', dot: '#EF4444' },
   }
 
   // Group leads by phone or email to detect repeat clients
@@ -162,9 +161,12 @@ export default function ClientsPage() {
                         {lead.status === 'new' ? 'New' : lead.status === 'quoted' ? 'Quoted' : lead.status === 'won' ? 'Won' : 'Lost'}
                       </span>
                       {previousJobs > 0 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
-                          🔁 {previousJobs} previous job{previousJobs > 1 ? 's' : ''}
-                        </span>
+                        <button
+                          onClick={e => { e.preventDefault(); setExpandedClient(expandedClient === lead.id ? null : lead.id) }}
+                          className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium flex items-center gap-1">
+                          🔁 {previousJobs} previous {previousJobs === 1 ? 'job' : 'jobs'}
+                          <span className="text-purple-500">{expandedClient === lead.id ? '▲' : '▼'}</span>
+                        </button>
                       )}
                     </div>
 
@@ -200,6 +202,38 @@ export default function ClientsPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Previous jobs dropdown */}
+                    {expandedClient === lead.id && previousJobs > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Previous jobs</p>
+                        {allJobs
+                          .filter(j => j.id !== lead.id)
+                          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                          .map(job => {
+                            const jst = STATUS_COLOR[job.status] || STATUS_COLOR.new
+                            return (
+                              <div key={job.id}
+                                onClick={e => { e.preventDefault(); router.push(`/lead/${job.id}`) }}
+                                className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 cursor-pointer hover:bg-gray-100">
+                                <div>
+                                  <p className="text-xs font-medium text-gray-700">{job.job_type || 'Job'}</p>
+                                  <p className="text-xs text-gray-500">{new Date(job.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {job.quotes?.[0]?.total > 0 && (
+                                    <span className="text-xs font-semibold text-gray-700">{fmt(job.quotes[0].total)}</span>
+                                  )}
+                                  <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                    style={{ background: jst.bg, color: jst.c }}>
+                                    {job.status}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Delete */}

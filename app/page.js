@@ -20,7 +20,7 @@ const STATUS = {
   new:    { label:'New',    bg:'#EFF6FF', c:'#2563EB', dot:'#3B82F6' },
   quoted: { label:'Quoted', bg:'#FFFBEB', c:'#B45309', dot:'#F59E0B' },
   won:    { label:'Won',    bg:'#F0FDF4', c:'#15803D', dot:'#22C55E' },
-  lost:   { label:'Lost',   bg:'#F4F4F5', c:'#A1A1AA', dot:'#D4D4D8' },
+  lost:   { label:'Lost',   bg:'#FEF2F2', c:'#DC2626', dot:'#EF4444' },
 }
 
 export default function Dashboard() {
