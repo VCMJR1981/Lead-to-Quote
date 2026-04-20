@@ -390,7 +390,10 @@ export default function LeadPage({ params }) {
         {leadStatus==='won' && (
           <div className="mt-3 bg-green-50 rounded-xl px-3 py-2 flex items-center justify-between">
             <span className="text-sm text-green-700 font-medium">🏆 Job won!</span>
-            <button onClick={() => router.push(`/invoice/${quoteId}`)}
+            <button onClick={async () => {
+                const id = quoteId || await saveQuote()
+                if (id) router.push(`/invoice/${id}`)
+              }}
               className="bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
               📄 Convert to Invoice
             </button>
@@ -737,13 +740,18 @@ export default function LeadPage({ params }) {
               className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50 disabled:opacity-50">
               {saving ? '...' : saved ? '✓ Saved' : 'Save'}
             </button>
-            <button onClick={() => { saveQuote().then(id => { if(id) window.open(`/quote/${id}`, '_blank') }) }}
+            <button onClick={async () => {
+                const id = await saveQuote()
+                if (id) window.open(`/quote/${id}`, '_blank')
+              }}
               className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50">
               Preview
             </button>
-            <button onClick={() => { if(quoteId) window.open(`/quote/${quoteId}/print`, '_blank') }}
-              disabled={!quoteId}
-              className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50 disabled:opacity-40">
+            <button onClick={async () => {
+                const id = quoteId || await saveQuote()
+                if (id) window.open(`/quote/${id}/print`, '_blank')
+              }}
+              className="flex-1 border border-gray-200 text-gray-600 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50">
               📄 PDF
             </button>
           </div>

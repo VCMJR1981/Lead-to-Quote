@@ -23,8 +23,8 @@ export default function ClientsPage() {
   const [search, setSearch] = useState('')
   const [dataLoading, setDataLoading] = useState(true)
   const [expandedClient, setExpandedClient] = useState(null)
-
-  useEffect(() => { if (user) fetchData() }, [user])
+  const router = useRouter()
+  const supabase = createClient()(() => { if (user) fetchData() }, [user])
 
   async function fetchData() {
     const { data: biz } = await supabase
