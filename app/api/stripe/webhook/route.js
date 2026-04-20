@@ -82,7 +82,7 @@ export async function POST(request) {
         await supabaseAdmin.from('businesses').update({
           stripe_customer_id: data.customer,
           stripe_subscription_id: data.subscription,
-          subscription_status: 'trialing',
+          subscription_status: 'active',
         }).eq('id', businessId)
         break
       }
