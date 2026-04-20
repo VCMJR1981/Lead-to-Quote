@@ -58,9 +58,21 @@ function BillingContent() {
     window.location.href = url
   }
 
-  function startConnect() {
+  async function startConnect() {
     setConnectLoading(true)
-    window.location.href = '/api/stripe/connect/oauth'
+    if (!business?.id) {
+      setMessage('Error: Business not loaded')
+      setConnectLoading(false)
+      return
+    }
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: 'ca_UMkrkNLRrUy02czI9h2gAmRgOicRJ4uD',
+      scope: 'read_write',
+      redirect_uri: `${window.location.origin}/api/stripe/connect/callback`,
+      state: business.id,
+    })
+    window.location.href = `https://connect.stripe.com/oauth/authorize?${params.toString()}`
   }
 
   const price = business?.currency === 'EUR' ? '€24' : '$29'

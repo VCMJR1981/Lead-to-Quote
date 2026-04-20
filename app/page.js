@@ -274,7 +274,7 @@ export default function Dashboard() {
             ⚡
           </Link>
           <Link href="/settings" className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2.5 rounded-xl flex-shrink-0">
-            👤
+            ⚙️
           </Link>
         </div>
       </div>

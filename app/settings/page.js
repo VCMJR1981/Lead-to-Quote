@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [signingOut, setSigningOut] = useState(false)
+  const [connectLoading, setConnectLoading] = useState(false)
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
   const router = useRouter()
@@ -82,6 +83,20 @@ export default function SettingsPage() {
     setSigningOut(true)
     await supabase.auth.signOut()
     window.location.href = '/login'
+  }
+
+  function startConnect() {
+    setConnectLoading(true)
+    if (!business?.id) { setConnectLoading(false); return }
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: 'ca_UMkrkNLRrUy02czI9h2gAmRgOicRJ4uD',
+      scope: 'read_write',
+      redirect_uri: `${window.location.origin}/api/stripe/connect/callback`,
+      state: business.id,
+    })
+    window.open(`https://connect.stripe.com/oauth/authorize?${params.toString()}`, '_blank')
+    setConnectLoading(false)
   }
 
   const cfg = business ? COUNTRY_CONFIG[business.country] : null
@@ -287,6 +302,42 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+        {/* Stripe Connect */}
+        <div>
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Card Payments</p>
+          {business?.stripe_connect_onboarded ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#635BFF] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-black text-base">S</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 text-sm">Stripe connected ✓</p>
+                  <p className="text-xs text-gray-600 mt-0.5">Clients can pay deposits by card.</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 bg-[#635BFF] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-black text-base">S</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Connect with Stripe</p>
+                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                    Let clients pay deposits by card. The Stripe fee is added to their total — you receive the full amount.
+                  </p>
+                </div>
+              </div>
+              <button onClick={startConnect} disabled={connectLoading}
+                className="w-full bg-[#635BFF] text-white rounded-xl py-3 font-semibold text-sm disabled:opacity-60">
+                {connectLoading ? 'Opening Stripe...' : 'Connect Stripe account →'}
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Account */}
         <div>
