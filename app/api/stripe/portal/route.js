@@ -1,24 +1,21 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { getStripe } from '@/lib/stripe'
 
-export async function POST() {
+export async function POST(request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
-    )
+    const { business_id } = await request.json()
+    if (!business_id) return NextResponse.json({ error: 'Missing business_id' }, { status: 400 })
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
 
     const { data: business } = await supabase
       .from('businesses')
       .select('stripe_customer_id')
-      .eq('owner_id', user.id)
+      .eq('id', business_id)
       .single()
 
     if (!business?.stripe_customer_id) {

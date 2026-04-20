@@ -1,24 +1,21 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { getStripe, PRICE_IDS } from '@/lib/stripe'
 
 export async function POST(request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
-    )
+    const { business_id } = await request.json()
+    if (!business_id) return NextResponse.json({ error: 'Missing business_id' }, { status: 400 })
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
 
     const { data: business } = await supabase
       .from('businesses')
       .select('*')
-      .eq('owner_id', user.id)
+      .eq('id', business_id)
       .single()
 
     if (!business) return NextResponse.json({ error: 'Business not found' }, { status: 404 })
@@ -26,35 +23,26 @@ export async function POST(request) {
     const currency = business.currency || 'USD'
     const priceId = PRICE_IDS[currency] || PRICE_IDS.USD
 
-    if (!priceId) {
-      return NextResponse.json({ error: 'Price ID not configured' }, { status: 500 })
-    }
+    if (!priceId) return NextResponse.json({ error: 'Price not configured' }, { status: 500 })
 
-    // Create or reuse Stripe customer
     let customerId = business.stripe_customer_id
 
     if (!customerId) {
       const customer = await getStripe().customers.create({
-        email: user.email,
+        email: business.email,
         name: business.name,
-        metadata: { business_id: business.id, user_id: user.id },
+        metadata: { business_id: business.id },
       })
       customerId = customer.id
-
-      await supabase.from('businesses')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', business.id)
+      await supabase.from('businesses').update({ stripe_customer_id: customerId }).eq('id', business.id)
     }
 
-    // Create checkout session
     const session = await getStripe().checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: {
-        metadata: { business_id: business.id },
-      },
+      subscription_data: { metadata: { business_id: business.id } },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=1`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=1`,
       metadata: { business_id: business.id },

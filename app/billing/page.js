@@ -29,7 +29,11 @@ function BillingContent() {
 
   async function startCheckout() {
     setCheckoutLoading(true)
-    const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ business_id: business.id })
+    })
     const { url, error } = await res.json()
     if (error) { setMessage('Error: ' + error); setCheckoutLoading(false); return }
     window.location.href = url
@@ -37,7 +41,11 @@ function BillingContent() {
 
   async function openPortal() {
     setPortalLoading(true)
-    const res = await fetch('/api/stripe/portal', { method: 'POST' })
+    const res = await fetch('/api/stripe/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ business_id: business.id })
+    })
     const { url, error } = await res.json()
     if (error) { setMessage('Error: ' + error); setPortalLoading(false); return }
     window.location.href = url
