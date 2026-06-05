@@ -1,46 +1,236 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+:root {
+  --bg: #0a0d0c;
+  --bg-2: #111614;
+  --surface: #181f1c;
+  --line: #232d28;
+  --text: #ebeeea;
+  --muted: #8a948e;
+  --accent: #d4ff3a;
+  --green: #c8f24a;
+  --blue: #00b4ff;
+  --orange: #ff7a3d;
+  --purple: #b794f6;
+  --pink: #f687b3;
+  --warn: #ffa726;
+}
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  font-family: 'DM Sans', sans-serif;
-  background-color: #FAFAF9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
+  color: var(--text);
 }
 
-h1, h2, h3, h4, h5, .font-heading {
-  font-family: 'Syne', sans-serif;
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
-input, select, textarea {
-  font-family: 'DM Sans', sans-serif;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* Remove number input arrows */
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
+::-webkit-scrollbar-track {
+  background: var(--bg-2);
 }
 
-/* Safe area for mobile bottom nav */
-.pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom), 12px);
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
 
-/* Hide scrollbar but keep scroll */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Utility classes */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Brand gradient */
+.brand-gradient {
+  background: linear-gradient(135deg, var(--accent), var(--orange));
 }
 
-@layer utilities {
-  .brand-gradient {
-    background: linear-gradient(135deg, #D4FF3A 0%, #F97316 100%);
+/* Light text colors */
+.text-gray-900 {
+  color: var(--text);
+}
+
+.text-gray-700 {
+  color: var(--text);
+}
+
+.text-gray-600 {
+  color: var(--muted);
+}
+
+.text-gray-500 {
+  color: var(--muted);
+}
+
+.text-gray-400 {
+  color: var(--line);
+}
+
+/* Background colors */
+.bg-white {
+  background-color: var(--surface);
+  border-color: var(--line);
+}
+
+.bg-gray-50 {
+  background-color: var(--bg-2);
+}
+
+.bg-gray-100 {
+  background-color: var(--bg-2);
+}
+
+.bg-gray-200 {
+  background-color: var(--line);
+}
+
+.bg-\#FAFAF9 {
+  background-color: var(--bg);
+}
+
+.bg-brand-light {
+  background-color: rgba(212, 255, 58, 0.1);
+  color: var(--accent);
+}
+
+/* Border colors */
+.border-gray-100 {
+  border-color: var(--line);
+}
+
+.border-gray-200 {
+  border-color: var(--line);
+}
+
+.border-brand {
+  border-color: var(--accent);
+}
+
+/* Input styles */
+input, textarea, select {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--muted);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* Button base */
+button {
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status badge colors */
+.status-new {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: rgb(59, 130, 246);
+}
+
+.status-quoted {
+  background-color: rgba(217, 119, 6, 0.1);
+  color: rgb(217, 119, 6);
+}
+
+.status-won {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: rgb(34, 197, 94);
+}
+
+.status-lost {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: rgb(239, 68, 68);
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Cards */
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Links */
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 200ms;
+}
+
+a:hover {
+  color: var(--green);
+}
+
+/* Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
