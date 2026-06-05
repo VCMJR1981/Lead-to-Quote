@@ -30,7 +30,7 @@ export default function QuotePrintPage({ params }) {
   if (!quote) return <div style={{ padding:40, fontFamily:'sans-serif' }}><p>Quote not found.</p></div>
 
   const fmt = n => formatCurrency(n, business?.currency || 'USD')
-  const accent = '#E85D26'
+  const accent = '#D4FF3A'
   const depositAmt = (quote.total || 0) * (quote.deposit_pct || 0) / 100
 
   return (
@@ -172,7 +172,7 @@ export default function QuotePrintPage({ params }) {
 
         <div className="footer">
           <span>{business?.name} · {new Date(quote.created_at).toLocaleDateString()}</span>
-          <span>Lead-to-Quote</span>
+          <span>Quote-Rig</span>
         </div>
       </div>
     </>

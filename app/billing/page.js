@@ -81,7 +81,7 @@ function BillingContent() {
                 {isPremium ? 'Premium' : 'Free'}
               </span>
               <p className="font-bold font-heading text-gray-900 text-lg mt-2">
-                {isPremium ? `Lead-to-Quote Premium · ${price}/mo` : 'Lead-to-Quote Free'}
+                {isPremium ? `Quote-Rig Premium · ${price}/mo` : 'Quote-Rig Free'}
               </p>
               <p className="text-sm text-gray-600 mt-1">
                 {isPremium ? 'All features unlocked' : '5 quotes/month · Upgrade for unlimited'}

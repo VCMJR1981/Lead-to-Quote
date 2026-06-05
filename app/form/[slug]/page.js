@@ -67,7 +67,7 @@ export default function IntakeFormPage({ params }) {
     </div>
   )
 
-  const accent = business?.accent_color || '#E85D26'
+  const accent = business?.accent_color || '#D4FF3A'
   const trade = getTrade(business?.industry)
   const jobTypes = trade?.jobTypes || []
   const isPortuguese = business?.language === 'pt'

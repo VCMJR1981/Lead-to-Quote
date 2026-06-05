@@ -16,14 +16,14 @@ Use your Portuguese company entity for payouts.
 
 In Stripe Dashboard → Products → Add product:
 
-**Product 1: Lead-to-Quote USD**
-- Name: Lead-to-Quote
+**Product 1: Quote-Rig USD**
+- Name: Quote-Rig
 - Price: $29.00 / month / recurring
 - Currency: USD
 - Copy the Price ID (starts with `price_`) → paste as `STRIPE_PRICE_ID_USD`
 
-**Product 2: Lead-to-Quote EUR**
-- Name: Lead-to-Quote
+**Product 2: Quote-Rig EUR**
+- Name: Quote-Rig
 - Price: €24.00 / month / recurring
 - Currency: EUR
 - Copy the Price ID → paste as `STRIPE_PRICE_ID_EUR`

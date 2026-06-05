@@ -103,7 +103,7 @@ export default function InvoicePage({ params }) {
           <p className="text-sm text-blue-700 font-medium">💳 Please arrange payment with {business?.name} directly.</p>
         </div>
 
-        <p className="text-center text-xs text-gray-500 pb-8">Powered by Lead-to-Quote</p>
+        <p className="text-center text-xs text-gray-500 pb-8">Powered by Quote-Rig</p>
       </div>
     </div>
   )

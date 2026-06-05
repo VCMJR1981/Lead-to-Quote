@@ -1,5 +1,5 @@
 -- ============================================
--- LEAD-TO-QUOTE — Database Schema v2
+-- Quote-Rig — Database Schema v2
 -- Run this in Supabase SQL Editor
 -- ============================================
 
@@ -15,7 +15,7 @@ create table public.businesses (
   website text,
   address text,
   tagline text,
-  accent_color text default '#E85D26',
+  accent_color text default '#D4FF3A',
   industry text not null default 'handyman',
   country text not null default 'US',
   language text not null default 'en',

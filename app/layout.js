@@ -4,7 +4,7 @@ import './globals.css'
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne', weight: ['400','500','600','700','800'] })
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm', weight: ['300','400','500','600'] })
 
-export const metadata = { title: 'Lead-to-Quote', description: 'Quote faster. Win more jobs.' }
+export const metadata = { title: 'Quote-Rig', description: 'Quote faster. Win more jobs.' }
 
 export default function RootLayout({ children }) {
   return (

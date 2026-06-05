@@ -29,7 +29,7 @@ export default function LoginPage() {
           <div className="w-16 h-16 brand-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-2xl font-heading">Q</span>
           </div>
-          <h1 className="text-2xl font-bold font-heading text-gray-900">Lead-to-Quote</h1>
+          <h1 className="text-2xl font-bold font-heading text-gray-900">Quote-Rig</h1>
           <p className="text-gray-600 text-sm mt-1">Quote faster. Win more jobs.</p>
         </div>
         {sent ? (

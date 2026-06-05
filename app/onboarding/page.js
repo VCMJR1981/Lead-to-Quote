@@ -496,7 +496,7 @@ export default function OnboardingPage() {
             disabled={!canProceed || saving}
             className="flex-1 brand-gradient text-white rounded-xl py-3.5 font-semibold text-sm disabled:opacity-50">
             {saving ? 'Setting up...' :
-             step === STEPS.length - 1 ? 'Start using Lead-to-Quote →' : 'Continue →'}
+             step === STEPS.length - 1 ? 'Start using Quote-Rig →' : 'Continue →'}
           </button>
         </div>
       </div>

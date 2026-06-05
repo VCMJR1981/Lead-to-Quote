@@ -46,7 +46,7 @@ export default function QuotePage({ params }) {
 
   const currency = business?.currency || 'USD'
   const fmt = n => formatCurrency(n, currency)
-  const accent = '#E85D26'
+  const accent = '#D4FF3A'
   const paymentMethods = quote.payment_methods || ['bank']
   const depositPct = quote.deposit_pct || 0
   const depositAmt = (quote.total || 0) * depositPct / 100
@@ -224,7 +224,7 @@ export default function QuotePage({ params }) {
           <p className="text-xs text-gray-500 leading-relaxed">This quotation is valid for 30 days. Final costs may vary due to unforeseen site conditions or scope changes. Any changes will be communicated and approved in writing before work proceeds.</p>
         </div>
 
-        <p className="text-center text-xs text-gray-400 pb-4">Powered by <span className="text-brand">Lead-to-Quote</span></p>
+        <p className="text-center text-xs text-gray-400 pb-4">Powered by <span className="text-brand">Quote-Rig</span></p>
       </div>
 
       {/* Accept button */}
